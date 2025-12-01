@@ -10,7 +10,7 @@ import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, HeroSliderComponent, Tilt3dDirective],
   template: `
-    <!-- Hero Section -->
+    <!-- Section Héros -->
     <section class="relative h-[50vh] flex items-center justify-center overflow-hidden">
       <app-hero-slider [images]="heroImages"></app-hero-slider>
       <div class="relative z-10 text-center text-white px-6" data-aos="fade-up">
@@ -211,7 +211,7 @@ import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
               </div>
             </div>
 
-            <!-- Submit -->
+            <!-- Soumettre -->
             <div class="pt-8 text-center">
               <button type="submit" [disabled]="enrollmentForm.invalid" class="px-12 py-4 bg-secondary text-white font-bold text-lg rounded-full shadow-xl hover:bg-primary transition-all transform hover:scale-105 border-2 border-secondary hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed">
                 Envoyer la demande

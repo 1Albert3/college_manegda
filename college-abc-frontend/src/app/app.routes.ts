@@ -13,17 +13,17 @@ export const routes: Routes = [
         path: '',
         component: PublicLayoutComponent,
         children: [
-            { path: '', component: HomeComponent, title: 'Collège ABC - Accueil' },
-            { path: 'about', component: AboutComponent, title: 'Collège ABC - Notre Histoire' },
-            { path: 'school-life', loadComponent: () => import('./features/public/school-life/school-life.component').then(m => m.SchoolLifeComponent), title: 'Collège ABC - Vie Scolaire' },
-            { path: 'news', component: NewsComponent, title: 'Collège ABC - Actualités' },
-            { path: 'inscription', component: InscriptionComponent, title: 'Collège ABC - Inscription' },
-            { path: 'contact', component: ContactComponent, title: 'Collège ABC - Contact' },
-            { path: 'faq', loadComponent: () => import('./features/public/faq/faq.component').then(m => m.FaqComponent), title: 'Collège ABC - FAQ' },
-            { path: 'login', component: LoginComponent, title: 'Collège ABC - Espace Parents' },
+            { path: '', component: HomeComponent, title: 'Collège Privé Wend-Manegda - Accueil' },
+            { path: 'about', component: AboutComponent, title: 'Collège Privé Wend-Manegda - Notre Histoire' },
+            { path: 'school-life', loadComponent: () => import('./features/public/school-life/school-life.component').then(m => m.SchoolLifeComponent), title: 'Collège Privé Wend-Manegda - Vie Scolaire' },
+            { path: 'news', component: NewsComponent, title: 'Collège Privé Wend-Manegda - Actualités' },
+            { path: 'inscription', component: InscriptionComponent, title: 'Collège Privé Wend-Manegda - Inscription' },
+            { path: 'contact', component: ContactComponent, title: 'Collège Privé Wend-Manegda - Contact' },
+            { path: 'faq', loadComponent: () => import('./features/public/faq/faq.component').then(m => m.FaqComponent), title: 'Collège Privé Wend-Manegda - FAQ' },
+            { path: 'login', component: LoginComponent, title: 'Collège Privé Wend-Manegda - Espace Parents' },
         ]
     },
-    { path: 'parents/dashboard', loadComponent: () => import('./features/parents/dashboard/dashboard.component').then(m => m.ParentDashboardComponent), title: 'Collège ABC - Tableau de Bord Parents' },
-    // Fallback
+    { path: 'parents/dashboard', loadComponent: () => import('./features/parents/dashboard/dashboard.component').then(m => m.ParentDashboardComponent), title: 'Collège Privé Wend-Manegda - Tableau de Bord Parents' },
+    // Redirection par défaut
     { path: '**', redirectTo: '' }
 ];

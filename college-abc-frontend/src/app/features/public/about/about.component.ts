@@ -7,17 +7,17 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
   standalone: true,
   imports: [CommonModule, HeroSliderComponent],
   template: `
-    <!-- Hero Section -->
+    <!-- Section Héros -->
     <section class="relative h-[60vh] flex items-center justify-center overflow-hidden">
       <app-hero-slider [images]="heroImages"></app-hero-slider>
       <div class="relative z-10 text-center text-white px-6" data-aos="fade-up">
         <h1 class="text-5xl md:text-6xl font-serif font-bold mb-4">À Propos</h1>
         <div class="w-24 h-1 bg-secondary mx-auto"></div>
-        <p class="text-xl mt-4 max-w-2xl mx-auto">Découvrez l'histoire, la vision et l'équipe qui font l'excellence du Collège ABC.</p>
+        <p class="text-xl mt-4 max-w-2xl mx-auto">Découvrez l'histoire, la vision et l'équipe qui font l'excellence du Collège Privé Wend-Manegda.</p>
       </div>
     </section>
 
-    <!-- Historique (Timeline) -->
+    <!-- Historique (Chronologie) -->
     <section class="py-20 bg-neutral-light">
       <div class="container mx-auto px-6">
         <div class="text-center mb-16" data-aos="fade-up">
@@ -25,7 +25,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
           <p class="text-gray-600 max-w-2xl mx-auto">Un parcours marqué par la croissance et l'excellence.</p>
         </div>
         <div class="relative border-l-4 border-primary/20 ml-6 md:ml-1/2 space-y-12">
-          <!-- Event 1 -->
+          <!-- Événement 1 -->
           <div class="relative pl-12 md:pl-0" data-aos="fade-up">
             <div class="absolute -left-[14px] md:left-1/2 md:-ml-[14px] w-6 h-6 bg-secondary rounded-full border-4 border-white shadow-lg z-10"></div>
             <div class="md:w-1/2 md:pr-12 md:text-right md:ml-auto md:mr-auto md:absolute md:left-0 md:top-0">
@@ -34,7 +34,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
                <p class="text-gray-600">Ouverture des premières classes de 6ème avec 50 élèves.</p>
             </div>
           </div>
-          <!-- Event 2 -->
+          <!-- Événement 2 -->
           <div class="relative pl-12 md:pl-0" data-aos="fade-up" data-aos-delay="100">
             <div class="absolute -left-[14px] md:left-1/2 md:-ml-[14px] w-6 h-6 bg-primary rounded-full border-4 border-white shadow-lg z-10"></div>
             <div class="md:w-1/2 md:pl-12 md:ml-auto">
@@ -43,7 +43,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
                <p class="text-gray-600">Construction du bâtiment administratif et de la bibliothèque.</p>
             </div>
           </div>
-           <!-- Event 3 -->
+           <!-- Événement 3 -->
           <div class="relative pl-12 md:pl-0" data-aos="fade-up" data-aos-delay="200">
             <div class="absolute -left-[14px] md:left-1/2 md:-ml-[14px] w-6 h-6 bg-secondary rounded-full border-4 border-white shadow-lg z-10"></div>
             <div class="md:w-1/2 md:pr-12 md:text-right md:ml-auto md:mr-auto md:absolute md:left-0 md:top-0">
@@ -52,7 +52,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
                <p class="text-gray-600">Lancement des classes de Lycée (2nde, 1ère, Tle).</p>
             </div>
           </div>
-          <!-- Event 4 -->
+          <!-- Événement 4 -->
           <div class="relative pl-12 md:pl-0" data-aos="fade-up" data-aos-delay="300">
             <div class="absolute -left-[14px] md:left-1/2 md:-ml-[14px] w-6 h-6 bg-primary rounded-full border-4 border-white shadow-lg z-10"></div>
             <div class="md:w-1/2 md:pl-12 md:ml-auto">
@@ -78,7 +78,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
           <div class="w-full md:w-2/3" data-aos="fade-left">
             <h2 class="text-3xl font-serif font-bold text-primary mb-6">Le Mot du Directeur</h2>
             <blockquote class="text-xl italic text-gray-600 mb-6 border-l-4 border-secondary pl-6">
-              "Bienvenue au Collège ABC. Depuis plus de 20 ans, nous nous engageons à offrir une éducation qui allie rigueur intellectuelle et élévation spirituelle. Notre mission est de former des citoyens responsables, éclairés par la foi et compétents pour le monde de demain."
+              "Bienvenue au Collège Privé Wend-Manegda. Depuis plus de 20 ans, nous nous engageons à offrir une éducation qui allie rigueur intellectuelle et élévation spirituelle. Notre mission est de former des citoyens responsables, éclairés par la foi et compétents pour le monde de demain."
             </blockquote>
             <p class="text-gray-600 leading-relaxed mb-4">
               Notre établissement se distingue par un encadrement personnalisé et une exigence bienveillante. Nous croyons que chaque élève a un talent unique qu'il nous appartient de faire fructifier.
@@ -198,7 +198,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
           <p class="text-gray-600">Des professionnels dévoués à la réussite de vos enfants.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-           <!-- Member 1 -->
+           <!-- Membre 1 -->
            <div class="text-center group" data-aos="fade-up">
               <div class="relative overflow-hidden rounded-xl mb-4 shadow-lg">
                  <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" class="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-500" alt="Directeur" />
@@ -206,7 +206,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
               <h3 class="text-xl font-bold text-gray-800">M. Jean KABORE</h3>
               <p class="text-secondary font-medium">Directeur Général</p>
            </div>
-           <!-- Member 2 -->
+           <!-- Membre 2 -->
            <div class="text-center group" data-aos="fade-up" data-aos-delay="100">
               <div class="relative overflow-hidden rounded-xl mb-4 shadow-lg">
                  <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop" class="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-500" alt="Directrice Études" />
@@ -214,7 +214,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
               <h3 class="text-xl font-bold text-gray-800">Mme Sarah OUEDRAOGO</h3>
               <p class="text-secondary font-medium">Directrice des Études</p>
            </div>
-           <!-- Member 3 -->
+           <!-- Membre 3 -->
            <div class="text-center group" data-aos="fade-up" data-aos-delay="200">
               <div class="relative overflow-hidden rounded-xl mb-4 shadow-lg">
                  <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1974&auto=format&fit=crop" class="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-500" alt="Censeur" />
@@ -222,7 +222,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
               <h3 class="text-xl font-bold text-gray-800">M. Paul SANKARA</h3>
               <p class="text-secondary font-medium">Censeur</p>
            </div>
-           <!-- Member 4 -->
+           <!-- Membre 4 -->
            <div class="text-center group" data-aos="fade-up" data-aos-delay="300">
               <div class="relative overflow-hidden rounded-xl mb-4 shadow-lg">
                  <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop" class="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-500" alt="Intendante" />

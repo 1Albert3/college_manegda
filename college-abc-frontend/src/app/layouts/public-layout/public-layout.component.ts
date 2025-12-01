@@ -8,16 +8,16 @@ import { filter } from 'rxjs/operators';
     standalone: true,
     imports: [RouterOutlet, RouterLink, CommonModule],
     template: `
-    <!-- Header -->
+    <!-- En-tête -->
     <header [ngClass]="headerClass()" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
       <div class="container mx-auto px-6 flex justify-between items-center h-full">
         <!-- Logo -->
         <a routerLink="/" class="text-2xl font-serif font-bold flex items-center gap-2 transition-colors duration-300 relative z-50">
           <i class="pi pi-shield text-3xl text-secondary"></i>
-          <span [class.text-white]="!isSolidHeader()" [class.text-primary]="isSolidHeader()">Collège ABC</span>
+          <span [class.text-white]="!isSolidHeader()" [class.text-primary]="isSolidHeader()">Collège Privé Wend-Manegda</span>
         </a>
 
-        <!-- Desktop Menu -->
+        <!-- Menu Bureau -->
         <nav class="hidden md:flex gap-8">
           <a *ngFor="let item of menuItems" [routerLink]="item.link" 
              class="font-medium hover:text-secondary transition-colors duration-300"
@@ -26,7 +26,7 @@ import { filter } from 'rxjs/operators';
           </a>
         </nav>
 
-        <!-- Desktop CTA -->
+        <!-- CTA Bureau -->
         <a routerLink="/login" 
            class="hidden md:block px-6 py-2 rounded-full font-semibold transition-all shadow-lg hover:scale-105"
            [class.bg-secondary]="!isSolidHeader()" [class.text-white]="!isSolidHeader()"
@@ -34,7 +34,7 @@ import { filter } from 'rxjs/operators';
            Espace Parents
         </a>
 
-        <!-- Mobile Menu Button -->
+        <!-- Bouton Menu Mobile -->
         <button (click)="toggleMobileMenu()" class="md:hidden relative z-50 focus:outline-none">
             <i class="pi text-2xl transition-colors duration-300" 
                [class.pi-bars]="!isMobileMenuOpen()" 
@@ -45,7 +45,7 @@ import { filter } from 'rxjs/operators';
         </button>
       </div>
 
-      <!-- Mobile Menu Overlay -->
+      <!-- Superposition Menu Mobile -->
       <div class="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center gap-8 transition-transform duration-300 md:hidden"
            [class.translate-y-0]="isMobileMenuOpen()"
            [class.-translate-y-full]="!isMobileMenuOpen()">
@@ -64,18 +64,18 @@ import { filter } from 'rxjs/operators';
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Contenu Principal -->
     <main>
       <router-outlet></router-outlet>
     </main>
 
-    <!-- Footer -->
+    <!-- Pied de page -->
     <footer class="bg-primary-dark text-white pt-16 pb-8">
       <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-        <!-- Brand -->
+        <!-- Marque -->
         <div>
           <div class="text-2xl font-serif font-bold text-white mb-4 flex items-center gap-2">
-             <i class="pi pi-shield text-3xl text-secondary"></i> Collège ABC
+             <i class="pi pi-shield text-3xl text-secondary"></i> Collège Privé Wend-Manegda
           </div>
           <p class="text-gray-300 text-sm leading-relaxed">
             Excellence académique et formation spirituelle pour les leaders de demain.
@@ -99,7 +99,7 @@ import { filter } from 'rxjs/operators';
           <ul class="space-y-3 text-gray-300">
             <li class="flex items-center gap-3"><i class="pi pi-map-marker text-secondary"></i> 123 Rue de l'Église, Ville</li>
             <li class="flex items-center gap-3"><i class="pi pi-phone text-secondary"></i> +226 00 00 00 00</li>
-            <li class="flex items-center gap-3"><i class="pi pi-envelope text-secondary"></i> contact@college-abc.bf</li>
+            <li class="flex items-center gap-3"><i class="pi pi-envelope text-secondary"></i> contact@wend-manegda.bf</li>
           </ul>
         </div>
 
@@ -114,7 +114,7 @@ import { filter } from 'rxjs/operators';
       </div>
       
       <div class="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400 text-sm">
-        &copy; {{ year }} Collège ABC. Tous droits réservés.
+        &copy; {{ year }} Collège Privé Wend-Manegda. Tous droits réservés.
       </div>
     </footer>
   `
@@ -141,10 +141,10 @@ export class PublicLayoutComponent implements OnInit {
             filter(event => event instanceof NavigationEnd)
         ).subscribe((event: any) => {
             this.isLoginPage.set(event.url.includes('/login'));
-            this.isMobileMenuOpen.set(false); // Close menu on navigation
+            this.isMobileMenuOpen.set(false); // Fermer le menu lors de la navigation
         });
         
-        // Initial check
+        // Vérification initiale
         this.isLoginPage.set(this.router.url.includes('/login'));
     }
 

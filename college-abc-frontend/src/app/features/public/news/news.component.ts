@@ -128,7 +128,7 @@ export class NewsComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.news$ = this.newsService.getLatestNews();
+    this.news$ = this.newsService.getNews();
     this.documents$ = this.newsService.getOfficialDocuments();
   }
 }

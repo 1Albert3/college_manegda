@@ -8,12 +8,12 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
   standalone: true,
   imports: [CommonModule, RouterLink, HeroSliderComponent],
   template: `
-    <!-- Hero Section -->
+    <!-- Section Héros -->
     <section class="relative h-screen flex items-center justify-center overflow-hidden">
-      <!-- Background Slider -->
+      <!-- Curseur d'arrière-plan -->
       <app-hero-slider [images]="heroImages"></app-hero-slider>
 
-      <!-- Content -->
+      <!-- Contenu -->
       <div class="relative z-20 text-center text-white px-6 max-w-5xl mx-auto" data-aos="fade-up" data-aos-duration="1000">
         <h1 class="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight drop-shadow-lg">
           L'excellence académique, <br/>
@@ -32,7 +32,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
         </div>
       </div>
       
-      <!-- Scroll Down Indicator -->
+      <!-- Indicateur de défilement vers le bas -->
       <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
         <i class="pi pi-angle-down text-4xl text-white/80"></i>
       </div>
@@ -42,12 +42,12 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
     <section class="py-24 bg-neutral-light">
       <div class="container mx-auto px-6">
         <div class="text-center mb-20" data-aos="fade-up">
-          <h2 class="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Pourquoi choisir le Collège ABC ?</h2>
+          <h2 class="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Pourquoi choisir le Collège Privé Wend-Manegda ?</h2>
           <div class="w-24 h-1.5 bg-secondary mx-auto rounded-full"></div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <!-- Card 1 -->
+          <!-- Carte 1 -->
           <div class="bg-white p-10 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 group border-b-4 border-transparent hover:border-secondary" data-aos="fade-up" data-aos-delay="100">
             <div class="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
               <i class="pi pi-book text-4xl text-primary group-hover:text-white"></i>
@@ -58,7 +58,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
             </p>
           </div>
 
-          <!-- Card 2 -->
+          <!-- Carte 2 -->
           <div class="bg-white p-10 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 group border-b-4 border-transparent hover:border-secondary" data-aos="fade-up" data-aos-delay="200">
             <div class="w-20 h-20 bg-secondary/10 rounded-full flex items-center justify-center mb-8 group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
               <i class="pi pi-heart text-4xl text-secondary group-hover:text-white"></i>
@@ -69,7 +69,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
             </p>
           </div>
 
-          <!-- Card 3 -->
+          <!-- Carte 3 -->
           <div class="bg-white p-10 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 group border-b-4 border-transparent hover:border-secondary" data-aos="fade-up" data-aos-delay="300">
             <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-8 group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
               <i class="pi pi-home text-4xl text-green-600 group-hover:text-white"></i>
@@ -87,16 +87,16 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
     <section class="py-24 bg-white overflow-hidden">
       <div class="container mx-auto px-6">
         <div class="flex flex-col md:flex-row items-center gap-16">
-          <!-- Image Grid -->
+          <!-- Grille d'images -->
           <div class="w-full md:w-1/2 grid grid-cols-2 gap-4 relative" data-aos="fade-right">
-             <!-- Decorative Element -->
+             <!-- Élément décoratif -->
              <div class="absolute -top-10 -left-10 w-32 h-32 bg-secondary/20 rounded-full blur-3xl"></div>
              
             <img src="https://images.unsplash.com/photo-1548625361-e88c60eb355c?q=80&w=2070&auto=format&fit=crop" alt="Chapelle" class="rounded-2xl shadow-lg w-full h-80 object-cover transform translate-y-8 hover:scale-105 transition-transform duration-500" />
             <img src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2073&auto=format&fit=crop" alt="Messe" class="rounded-2xl shadow-lg w-full h-80 object-cover hover:scale-105 transition-transform duration-500" />
           </div>
 
-          <!-- Content -->
+          <!-- Contenu -->
           <div class="w-full md:w-1/2" data-aos="fade-left">
             <div class="flex items-center gap-2 mb-4">
                 <span class="h-px w-8 bg-secondary"></span>
@@ -104,7 +104,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
             </div>
             <h2 class="text-4xl md:text-5xl font-serif font-bold text-primary mb-8">Grandir dans la Foi</h2>
             <p class="text-gray-600 mb-8 leading-relaxed text-lg">
-              Au Collège ABC, nous croyons que l'éducation ne se limite pas à l'intellect. Nous accompagnons chaque jeune dans sa quête de sens et sa vie spirituelle, dans le respect de la liberté de chacun.
+              Au Collège Privé Wend-Manegda, nous croyons que l'éducation ne se limite pas à l'intellect. Nous accompagnons chaque jeune dans sa quête de sens et sa vie spirituelle, dans le respect de la liberté de chacun.
             </p>
             <ul class="space-y-6 mb-10">
               <li class="flex items-start gap-4">
@@ -144,13 +144,13 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
       </div>
     </section>
 
-    <!-- CTA Final -->
+    <!-- Appel à l'action final -->
     <section class="py-24 bg-primary relative overflow-hidden">
-      <!-- Background Pattern -->
+      <!-- Motif d'arrière-plan -->
       <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 30px 30px;"></div>
       
       <div class="container mx-auto px-6 relative z-10 text-center" data-aos="zoom-in">
-        <h2 class="text-4xl md:text-5xl font-serif font-bold text-white mb-8">Prêt à rejoindre la famille ABC ?</h2>
+        <h2 class="text-4xl md:text-5xl font-serif font-bold text-white mb-8">Prêt à rejoindre la famille Wend-Manegda ?</h2>
         <p class="text-xl text-blue-100 mb-12 max-w-2xl mx-auto leading-relaxed">
           Les inscriptions pour l'année scolaire 2024-2025 sont ouvertes. Offrez à votre enfant un avenir brillant dans un cadre bienveillant.
         </p>

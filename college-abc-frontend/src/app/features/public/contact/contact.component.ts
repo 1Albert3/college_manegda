@@ -8,7 +8,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
     standalone: true,
     imports: [CommonModule, HeroSliderComponent, RouterLink],
     template: `
-    <!-- Hero Section -->
+    <!-- Section Héros -->
     <section class="relative h-[50vh] flex items-center justify-center overflow-hidden">
       <app-hero-slider [images]="heroImages"></app-hero-slider>
       <div class="relative z-10 text-center text-white px-6" data-aos="fade-up">
@@ -57,9 +57,9 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
             </form>
           </div>
 
-          <!-- Infos & Map -->
+          <!-- Infos & Carte -->
           <div class="space-y-8" data-aos="fade-left">
-            <!-- Info Cards -->
+            <!-- Cartes d'information -->
             <div class="grid grid-cols-1 gap-6">
               <a href="https://maps.google.com/?q=123+Rue+de+l'Église,+Ouagadougou" target="_blank" class="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 hover:shadow-lg transition-all hover:bg-gray-50 group cursor-pointer">
                 <div class="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center text-secondary text-xl group-hover:bg-secondary group-hover:text-white transition-colors">
@@ -81,18 +81,18 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
                 </div>
               </a>
 
-              <a href="mailto:secretariat@college-abc.bf" class="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 hover:shadow-lg transition-all hover:bg-gray-50 group cursor-pointer">
+              <a href="mailto:secretariat@wend-manegda.bf" class="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 hover:shadow-lg transition-all hover:bg-gray-50 group cursor-pointer">
                 <div class="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center text-secondary text-xl group-hover:bg-secondary group-hover:text-white transition-colors">
                   <i class="pi pi-envelope"></i>
                 </div>
                 <div>
                   <h3 class="font-bold text-gray-800">Email</h3>
-                  <p class="text-gray-600 text-sm">secretariat@college-abc.bf</p>
+                  <p class="text-gray-600 text-sm">secretariat@wend-manegda.bf</p>
                 </div>
               </a>
             </div>
 
-            <!-- Social Media Buttons -->
+            <!-- Boutons Réseaux Sociaux -->
             <div class="flex gap-4 justify-center md:justify-start pt-4">
                <a href="#" class="w-12 h-12 bg-[#1877F2] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                   <i class="pi pi-facebook text-xl"></i>
@@ -108,7 +108,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
                </a>
             </div>
 
-            <!-- Map Placeholder -->
+            <!-- Emplacement Carte -->
             <div class="bg-gray-200 rounded-2xl h-80 w-full flex items-center justify-center relative overflow-hidden shadow-inner group">
                <iframe 
                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3897.356247321456!2d-1.533333!3d12.366667!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xe2e95ecceaa44cd%3A0x799f677f827d543!2sOuagadougou%2C%20Burkina%20Faso!5e0!3m2!1sen!2s!4v1625000000000!5m2!1sen!2s" 
@@ -123,7 +123,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
           </div>
         </div>
 
-        <!-- FAQ CTA -->
+        <!-- Appel à l'action FAQ -->
         <div class="max-w-4xl mx-auto text-center mt-20" data-aos="fade-up">
            <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
              <h2 class="text-2xl font-serif font-bold text-primary mb-4">Besoin d'aide supplémentaire ?</h2>

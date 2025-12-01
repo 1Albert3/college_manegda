@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { GradeService, ReportCard } from '../../../core/services/grade.service';
 import { AttendanceService, Absence } from '../../../core/services/attendance.service';
@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 @Component({
   selector: 'app-parent-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div class="min-h-screen bg-gray-50 flex flex-col">
       <!-- Top Bar -->
