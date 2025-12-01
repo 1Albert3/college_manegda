@@ -1,0 +1,8 @@
+{
+    "Core": true,
+    "Student": true,
+    "Academic": true,
+    "Grade": true,
+    "Attendance": true,
+    "Communication": true
+}

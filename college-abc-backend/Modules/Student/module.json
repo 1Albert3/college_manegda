@@ -1,0 +1,12 @@
+{
+    "name": "Student",
+    "alias": "student",
+    "description": "Module de gestion des élèves",
+    "keywords": ["student", "élève"],
+    "priority": 0,
+    "providers": [
+        "Modules\\Student\\Providers\\StudentServiceProvider",
+        "Modules\\Student\\Providers\\RouteServiceProvider"
+    ],
+    "files": []
+}
