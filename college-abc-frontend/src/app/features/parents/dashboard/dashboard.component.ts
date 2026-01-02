@@ -1,299 +1,793 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { AuthService } from '../../../core/services/auth.service';
-import { GradeService, ReportCard } from '../../../core/services/grade.service';
-import { AttendanceService, Absence } from '../../../core/services/attendance.service';
-import { ScheduleService, CourseSlot } from '../../../core/services/schedule.service';
-import { DocumentService, AdminDoc } from '../../../core/services/document.service';
-import { Observable } from 'rxjs';
+import { RouterModule } from '@angular/router';
+import { ParentService, DashboardData, Child } from '../../../core/services/parent.service';
 
 @Component({
   selector: 'app-parent-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-gray-50 flex flex-col">
-      <!-- Top Bar -->
-      <header class="bg-primary text-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div class="flex items-center gap-3">
-            <i class="pi pi-shield text-2xl text-secondary"></i>
-            <span class="font-serif font-bold text-xl">Espace Parents</span>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="text-right hidden md:block" *ngIf="authService.currentUser() as user">
-              <div class="font-bold">{{ user.name }}</div>
-              <div class="text-xs text-blue-200" *ngIf="user.children?.length">
-                 Parents de {{ user.children![0].firstName }} ({{ user.children![0].class }})
-              </div>
-            </div>
-            <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
-               <i class="pi pi-user"></i>
-            </div>
-            <button (click)="logout()" class="text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded transition-colors">
-               <i class="pi pi-power-off"></i>
-            </button>
+    <div class="parent-dashboard">
+      <!-- Header -->
+      <div class="dashboard-header">
+        <div class="welcome">
+          <h1>Bienvenue sur le Portail Parents</h1>
+          <p>Collège Privé Wend-Manegda - Suivez la scolarité de votre enfant</p>
+        </div>
+        <div class="date">
+          {{ today | date:'EEEE dd MMMM yyyy':'':'fr' }}
+        </div>
+      </div>
+
+      <!-- Sélecteur d'enfant (si plusieurs) -->
+      <div class="child-selector" *ngIf="data?.children && data.children.length > 1">
+        <span class="selector-label">Enfant sélectionné :</span>
+        <div class="children-tabs">
+          <button 
+            *ngFor="let child of data.children"
+            class="child-tab"
+            [class.active]="selectedChildId === child.id"
+            (click)="selectChild(child)">
+            <img [src]="child.photo_url || defaultAvatar" class="child-avatar">
+            <span class="child-name">{{ child.prenoms }}</span>
+            <span class="child-class">{{ child.niveau }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Carte profil enfant -->
+      <div class="profile-card" *ngIf="data?.current_child">
+        <div class="profile-photo">
+          <img [src]="data.current_child.photo_url || defaultAvatar" alt="Photo">
+        </div>
+        <div class="profile-info">
+          <h2>{{ data.current_child.full_name }}</h2>
+          <div class="profile-details">
+            <span class="detail">
+              <span class="label">Matricule:</span>
+              {{ data.current_child.matricule }}
+            </span>
+            <span class="detail">
+              <span class="label">Classe:</span>
+              {{ data.current_child.class_name }}
+            </span>
           </div>
         </div>
-      </header>
+        <div class="profile-stats" *ngIf="data?.grades_summary">
+          <div class="stat-item">
+            <span class="stat-value" [class.good]="data.grades_summary.moyenne_generale >= 10">
+              {{ data.grades_summary.moyenne_generale | number:'1.2-2' }}
+            </span>
+            <span class="stat-label">Moyenne</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">
+              {{ data.grades_summary.rang }}<sup>e</sup>/{{ data.grades_summary.effectif }}
+            </span>
+            <span class="stat-label">Rang</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">T{{ data.grades_summary.trimestre }}</span>
+            <span class="stat-label">Trimestre</span>
+          </div>
+        </div>
+      </div>
 
-      <div class="flex-1 container mx-auto px-6 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
-          <!-- Sidebar Navigation -->
-          <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden sticky top-8">
-               <nav class="flex flex-col">
-                 <button (click)="activeTab = 'notes'" [class]="activeTab === 'notes' ? 'bg-blue-50 text-primary border-l-4 border-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'" class="flex items-center gap-3 px-6 py-4 transition-all text-left font-medium">
-                    <i class="pi pi-book"></i> Notes & Bulletins
-                 </button>
-                 <button (click)="activeTab = 'absences'" [class]="activeTab === 'absences' ? 'bg-blue-50 text-primary border-l-4 border-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'" class="flex items-center gap-3 px-6 py-4 transition-all text-left font-medium">
-                    <i class="pi pi-calendar-times"></i> Absences & Retards
-                 </button>
-                 <button (click)="activeTab = 'planning'" [class]="activeTab === 'planning' ? 'bg-blue-50 text-primary border-l-4 border-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'" class="flex items-center gap-3 px-6 py-4 transition-all text-left font-medium">
-                    <i class="pi pi-calendar"></i> Emploi du Temps
-                 </button>
-                 <button (click)="activeTab = 'documents'" [class]="activeTab === 'documents' ? 'bg-blue-50 text-primary border-l-4 border-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'" class="flex items-center gap-3 px-6 py-4 transition-all text-left font-medium">
-                    <i class="pi pi-folder-open"></i> Documents Administratifs
-                 </button>
-               </nav>
+      <!-- Grille principale -->
+      <div class="main-grid">
+        <!-- Notes récentes -->
+        <div class="card grades-card">
+          <div class="card-header">
+            <h3>📊 Notes Récentes</h3>
+            <a routerLink="/parents/grades">Voir tout →</a>
+          </div>
+          <div class="card-content">
+            <div class="grades-list" *ngIf="data?.recent_grades?.length">
+              <div class="grade-item" *ngFor="let grade of data.recent_grades">
+                <div class="grade-subject">{{ grade.subject }}</div>
+                <div class="grade-info">
+                  <span class="grade-type">{{ getEvaluationType(grade.type) }}</span>
+                  <span class="grade-date">{{ grade.date | date:'dd/MM' }}</span>
+                </div>
+                <div class="grade-value" [class.good]="grade.note >= 10" [class.bad]="grade.note < 10">
+                  {{ grade.note | number:'1.1-1' }}/20
+                </div>
+              </div>
             </div>
-            
-            <div class="mt-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-               <h4 class="font-bold text-primary mb-2 flex items-center gap-2"><i class="pi pi-info-circle"></i> Note Importante</h4>
-               <p class="text-sm text-gray-600">
-                  Cet espace est réservé à la consultation. Pour toute modification ou réclamation, veuillez contacter le secrétariat.
-               </p>
+            <div class="empty-message" *ngIf="!data?.recent_grades?.length">
+              Aucune note récente
             </div>
           </div>
+        </div>
 
-          <!-- Main Content -->
-          <div class="lg:col-span-3">
-            
-            <!-- Notes Section -->
-            <div *ngIf="activeTab === 'notes'" class="space-y-6 animate-fade-in">
-               <h2 class="text-2xl font-bold text-gray-800 mb-4">Relevé de Notes - Trimestre 1</h2>
-               
-               <ng-container *ngIf="reportCard$ | async as report">
-                   <!-- Summary Cards -->
-                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
-                         <div class="text-gray-500 text-sm mb-1">Moyenne Générale</div>
-                         <div class="text-3xl font-bold text-gray-800">{{ report.generalAverage }}<span class="text-lg text-gray-400">/20</span></div>
-                      </div>
-                      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
-                         <div class="text-gray-500 text-sm mb-1">Rang</div>
-                         <div class="text-3xl font-bold text-gray-800">{{ report.rank }}<span class="text-lg text-gray-400">ème</span></div>
-                      </div>
-                      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                         <div class="text-gray-500 text-sm mb-1">Appréciation</div>
-                         <div class="text-lg font-bold text-gray-800">{{ report.appreciation }}</div>
-                      </div>
-                   </div>
-
-                   <!-- Grades Table -->
-                   <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                      <table class="w-full text-left">
-                         <thead class="bg-gray-50 border-b">
-                            <tr>
-                               <th class="px-6 py-4 font-bold text-gray-600">Matière</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Devoirs</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Compo</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Moyenne</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Professeur</th>
-                            </tr>
-                         </thead>
-                         <tbody class="divide-y">
-                            <tr *ngFor="let grade of report.grades" class="hover:bg-gray-50">
-                               <td class="px-6 py-4 font-medium">{{ grade.subject }}</td>
-                               <td class="px-6 py-4 text-gray-600">{{ grade.marks.join(', ') }}</td>
-                               <td class="px-6 py-4 font-bold text-primary">{{ grade.average }}</td>
-                               <td class="px-6 py-4 font-bold">{{ grade.classAverage }}</td>
-                               <td class="px-6 py-4 text-sm text-gray-500">{{ grade.teacher }}</td>
-                            </tr>
-                         </tbody>
-                      </table>
-                   </div>
-               </ng-container>
+        <!-- Absences -->
+        <div class="card attendance-card">
+          <div class="card-header">
+            <h3>📅 Assiduité</h3>
+            <a routerLink="/parents/attendance">Détails →</a>
+          </div>
+          <div class="card-content">
+            <div class="attendance-summary" *ngIf="data?.attendance_summary">
+              <div class="attendance-stat">
+                <div class="stat-circle" [class.alert]="data.attendance_summary.absences > 5">
+                  {{ data.attendance_summary.absences }}
+                </div>
+                <span>Absences</span>
+              </div>
+              <div class="attendance-stat">
+                <div class="stat-circle" [class.warning]="data.attendance_summary.retards > 3">
+                  {{ data.attendance_summary.retards }}
+                </div>
+                <span>Retards</span>
+              </div>
+              <div class="attendance-stat">
+                <div class="stat-circle alert" *ngIf="data.attendance_summary.non_justifiees > 0">
+                  {{ data.attendance_summary.non_justifiees }}
+                </div>
+                <span *ngIf="data.attendance_summary.non_justifiees > 0">Non justifiées</span>
+              </div>
             </div>
-
-            <!-- Absences Section -->
-            <div *ngIf="activeTab === 'absences'" class="space-y-6 animate-fade-in">
-               <h2 class="text-2xl font-bold text-gray-800 mb-4">Suivi des Absences</h2>
-               
-               <ng-container *ngIf="absences$ | async as absenceData">
-                   <div class="bg-white p-6 rounded-xl shadow-sm mb-6 flex items-center gap-6">
-                      <div class="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-2xl font-bold">
-                         {{ absenceData.totalHours }}
-                      </div>
-                      <div>
-                         <div class="text-gray-500">Total Absences (Heures)</div>
-                         <div class="text-xl font-bold text-gray-800">{{ absenceData.totalHours }} heures justifiées</div>
-                      </div>
-                   </div>
-
-                   <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                      <table class="w-full text-left">
-                         <thead class="bg-gray-50 border-b">
-                            <tr>
-                               <th class="px-6 py-4 font-bold text-gray-600">Date</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Heure</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Matière</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Motif</th>
-                               <th class="px-6 py-4 font-bold text-gray-600">Statut</th>
-                            </tr>
-                         </thead>
-                         <tbody class="divide-y">
-                            <tr *ngFor="let abs of absenceData.list" class="hover:bg-gray-50">
-                               <td class="px-6 py-4">{{ abs.date }}</td>
-                               <td class="px-6 py-4">{{ abs.timeSlot }}</td>
-                               <td class="px-6 py-4 font-medium">{{ abs.subject }}</td>
-                               <td class="px-6 py-4 text-gray-600">{{ abs.reason }}</td>
-                               <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">{{ abs.status }}</span></td>
-                            </tr>
-                         </tbody>
-                      </table>
-                   </div>
-               </ng-container>
+            <div class="attendance-alert" *ngIf="data?.attendance_summary?.non_justifiees > 0">
+              ⚠️ {{ data.attendance_summary.non_justifiees }} absence(s) à justifier
             </div>
+          </div>
+        </div>
 
-            <!-- Planning Section -->
-            <div *ngIf="activeTab === 'planning'" class="space-y-6 animate-fade-in">
-               <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-2xl font-bold text-gray-800">Emploi du Temps</h2>
-                  <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Semaine du 25 Nov</span>
-               </div>
-               
-               <div class="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
-                  <div class="grid grid-cols-6 gap-4 min-w-[800px]">
-                     <!-- Header -->
-                     <div class="font-bold text-gray-400 text-center">Heure</div>
-                     <div class="font-bold text-gray-800 text-center">Lundi</div>
-                     <div class="font-bold text-gray-800 text-center">Mardi</div>
-                     <div class="font-bold text-gray-800 text-center">Mercredi</div>
-                     <div class="font-bold text-gray-800 text-center">Jeudi</div>
-                     <div class="font-bold text-gray-800 text-center">Vendredi</div>
-
-                     <!-- Rows (Simplified for Demo - In real app, we'd map this dynamically) -->
-                     <ng-container *ngIf="schedule$ | async as slots">
-                         <!-- 07h - 09h -->
-                         <div class="text-gray-500 text-sm text-center pt-4">07h - 09h</div>
-                         <ng-container *ngFor="let day of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']">
-                             <div *ngIf="getSlot(slots, day, '07h') as slot; else emptySlot" 
-                                  [class]="'bg-' + slot.color + '-100 border-' + slot.color + '-500'"
-                                  class="p-3 rounded-lg border-l-4">
-                                <div [class]="'text-' + slot.color + '-800'" class="font-bold">{{ slot.subject }}</div>
-                                <div [class]="'text-' + slot.color + '-600'" class="text-xs">{{ slot.room }}</div>
-                             </div>
-                             <ng-template #emptySlot>
-                                <div class="bg-gray-50 rounded-lg"></div>
-                             </ng-template>
-                         </ng-container>
-
-                         <!-- Break -->
-                         <div class="col-span-6 bg-gray-50 p-2 text-center text-xs text-gray-400 font-bold uppercase tracking-widest rounded">Récréation</div>
-
-                         <!-- 10h - 12h -->
-                         <div class="text-gray-500 text-sm text-center pt-4">10h - 12h</div>
-                         <ng-container *ngFor="let day of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']">
-                             <div *ngIf="getSlot(slots, day, '10h') as slot; else emptySlot" 
-                                  [class]="'bg-' + slot.color + '-100 border-' + slot.color + '-500'"
-                                  class="p-3 rounded-lg border-l-4">
-                                <div [class]="'text-' + slot.color + '-800'" class="font-bold">{{ slot.subject }}</div>
-                                <div [class]="'text-' + slot.color + '-600'" class="text-xs">{{ slot.room }}</div>
-                             </div>
-                             <ng-template #emptySlot>
-                                <div class="bg-gray-50 rounded-lg"></div>
-                             </ng-template>
-                         </ng-container>
-                     </ng-container>
-                  </div>
-               </div>
+        <!-- Paiements -->
+        <div class="card payment-card">
+          <div class="card-header">
+            <h3>💰 Situation Financière</h3>
+            <a routerLink="/parents/payments">Voir plus →</a>
+          </div>
+          <div class="card-content" *ngIf="data?.payment_status">
+            <div class="payment-progress">
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill" 
+                  [style.width.%]="getPaymentPercentage()">
+                </div>
+              </div>
+              <div class="progress-labels">
+                <span>{{ data.payment_status.paid | number }} FCFA payé</span>
+                <span>{{ data.payment_status.total | number }} FCFA total</span>
+              </div>
             </div>
-
-            <!-- Documents Section -->
-            <div *ngIf="activeTab === 'documents'" class="space-y-6 animate-fade-in">
-               <h2 class="text-2xl font-bold text-gray-800 mb-4">Documents Administratifs</h2>
-               
-               <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex items-start gap-3 mb-6">
-                  <i class="pi pi-exclamation-triangle text-yellow-600 mt-1"></i>
-                  <div>
-                     <h4 class="font-bold text-yellow-800">Service Payant</h4>
-                     <p class="text-sm text-yellow-700">Le téléchargement de certains documents officiels peut nécessiter le règlement des frais de scolarité.</p>
-                  </div>
-               </div>
-
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ng-container *ngIf="documents$ | async as docs">
-                      <div *ngFor="let doc of docs" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex justify-between items-center">
-                         <div class="flex items-center gap-4">
-                            <div [class]="'bg-' + doc.iconColor + '-100 text-' + doc.iconColor + '-500'" class="w-12 h-12 rounded-lg flex items-center justify-center">
-                               <i class="pi" [class.pi-file-pdf]="doc.type === 'PDF'" [class.pi-file]="doc.type !== 'PDF'"></i>
-                            </div>
-                            <div>
-                               <h3 class="font-bold text-gray-800">{{ doc.title }}</h3>
-                               <p class="text-xs text-gray-500">{{ doc.date }}</p>
-                            </div>
-                         </div>
-                         <button class="w-10 h-10 rounded-full bg-gray-100 hover:bg-primary hover:text-white flex items-center justify-center transition-colors">
-                            <i class="pi pi-download"></i>
-                         </button>
-                      </div>
-                  </ng-container>
-               </div>
+            <div class="payment-remaining" *ngIf="data.payment_status.remaining > 0">
+              <span class="amount">{{ data.payment_status.remaining | number }} FCFA</span>
+              restant à payer
+              <span class="deadline" *ngIf="data.payment_status.next_deadline">
+                (avant le {{ data.payment_status.next_deadline | date:'dd/MM/yyyy' }})
+              </span>
             </div>
+            <div class="payment-complete" *ngIf="data.payment_status.remaining === 0">
+              ✅ Scolarité entièrement payée
+            </div>
+          </div>
+        </div>
 
+        <!-- Messages -->
+        <div class="card messages-card">
+          <div class="card-header">
+            <h3>📨 Messagerie</h3>
+            <a routerLink="/parents/messages">Ouvrir →</a>
+          </div>
+          <div class="card-content">
+            <div class="messages-badge" *ngIf="data?.unread_messages > 0">
+              <span class="badge-number">{{ data.unread_messages }}</span>
+              <span class="badge-text">nouveau(x) message(s)</span>
+            </div>
+            <div class="no-messages" *ngIf="!data?.unread_messages">
+              Aucun nouveau message
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="quick-actions">
+        <h3>Actions rapides</h3>
+        <div class="actions-grid">
+          <a routerLink="/parents/bulletins" class="action-card">
+            <span class="action-icon">📄</span>
+            <span class="action-text">Bulletins</span>
+          </a>
+          <a routerLink="/parents/homework" class="action-card">
+            <span class="action-icon">📝</span>
+            <span class="action-text">Devoirs</span>
+          </a>
+          <a routerLink="/parents/schedule" class="action-card">
+            <span class="action-icon">📆</span>
+            <span class="action-text">Emploi du temps</span>
+          </a>
+          <a routerLink="/parents/appointments" class="action-card">
+            <span class="action-icon">📅</span>
+            <span class="action-text">RDV Professeur</span>
+          </a>
+          <a routerLink="/parents/invoices" class="action-card">
+            <span class="action-icon">🧾</span>
+            <span class="action-text">Factures</span>
+          </a>
+          <a routerLink="/parents/documents" class="action-card">
+            <span class="action-icon">📁</span>
+            <span class="action-text">Documents</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Événements à venir -->
+      <div class="events-section" *ngIf="data?.upcoming_events?.length">
+        <h3>📅 Prochains événements</h3>
+        <div class="events-list">
+          <div class="event-item" *ngFor="let event of data.upcoming_events">
+            <div class="event-date">
+              <span class="event-day">{{ event.date | date:'dd' }}</span>
+              <span class="event-month">{{ event.date | date:'MMM':'':'fr' }}</span>
+            </div>
+            <div class="event-info">
+              <span class="event-title">{{ event.title }}</span>
+              <span class="event-type">{{ event.type }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  `
-})
-export class ParentDashboardComponent implements OnInit {
-  // Onglet actif par défaut
-  activeTab: 'notes' | 'absences' | 'planning' | 'documents' = 'notes';
-
-  // Injection des services
-  authService = inject(AuthService);
-  private gradeService = inject(GradeService);
-  private attendanceService = inject(AttendanceService);
-  private scheduleService = inject(ScheduleService);
-  private documentService = inject(DocumentService);
-
-  // Observables pour les données (Pattern AsyncPipe)
-  reportCard$!: Observable<ReportCard>;
-  absences$!: Observable<{ totalHours: number, list: Absence[] }>;
-  schedule$!: Observable<CourseSlot[]>;
-  documents$!: Observable<AdminDoc[]>;
-
-  ngOnInit() {
-    // Simulation de l'ID de l'élève connecté (à récupérer via AuthService dans le futur)
-    const studentId = 101;
-    
-    // Vérification de l'authentification (Mock)
-    if (!this.authService.currentUser()) {
-        this.authService.login({}).subscribe();
+  `,
+  styles: [`
+    .parent-dashboard {
+      padding: 1.5rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #f8fafc;
+      min-height: 100vh;
     }
 
-    // Initialisation des flux de données
-    this.reportCard$ = this.gradeService.getReportCard(studentId, 1);
-    this.absences$ = this.attendanceService.getAbsences(studentId);
-    this.schedule$ = this.scheduleService.getSchedule(studentId);
-    this.documents$ = this.documentService.getDocuments(studentId);
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+    }
+
+    .welcome h1 {
+      font-size: 1.5rem;
+      color: #1a365d;
+      margin: 0 0 0.25rem;
+    }
+
+    .welcome p {
+      color: #64748b;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .date {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    /* Child Selector */
+    .child-selector {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .selector-label {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .children-tabs {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .child-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 25px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .child-tab.active {
+      border-color: #4f46e5;
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    }
+
+    .child-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .child-name {
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .child-class {
+      font-size: 0.75rem;
+      color: #64748b;
+      padding: 0.125rem 0.5rem;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+
+    /* Profile Card */
+    .profile-card {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 16px;
+      color: white;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+
+    .profile-photo img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      object-fit: cover;
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-info h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.35rem;
+    }
+
+    .profile-details {
+      display: flex;
+      gap: 1.5rem;
+      opacity: 0.9;
+    }
+
+    .profile-details .label {
+      opacity: 0.7;
+      margin-right: 0.25rem;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+    }
+
+    .stat-item .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .stat-item .stat-value.good {
+      color: #86efac;
+    }
+
+    .stat-item .stat-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #1e293b;
+    }
+
+    .card-header a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    .card-content {
+      padding: 1.25rem;
+    }
+
+    /* Grades Card */
+    .grades-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .grade-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .grade-subject {
+      flex: 1;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .grade-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-right: 1rem;
+    }
+
+    .grade-type {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .grade-date {
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+
+    .grade-value {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .grade-value.good { color: #10b981; }
+    .grade-value.bad { color: #ef4444; }
+
+    /* Attendance Card */
+    .attendance-summary {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 1rem;
+    }
+
+    .attendance-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stat-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .stat-circle.alert {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .stat-circle.warning {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .attendance-alert {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* Payment Card */
+    .payment-progress {
+      margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+    }
+
+    .payment-remaining {
+      text-align: center;
+      color: #64748b;
+    }
+
+    .payment-remaining .amount {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+
+    .payment-remaining .deadline {
+      display: block;
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    .payment-complete {
+      text-align: center;
+      color: #10b981;
+      font-weight: 500;
+    }
+
+    /* Messages Card */
+    .messages-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 10px;
+      color: white;
+    }
+
+    .badge-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .no-messages {
+      text-align: center;
+      color: #94a3b8;
+      padding: 1rem;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: #94a3b8;
+      padding: 1rem;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      margin-bottom: 2rem;
+    }
+
+    .quick-actions h3 {
+      font-size: 1.1rem;
+      color: #1e293b;
+      margin: 0 0 1rem;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1rem;
+    }
+
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.25rem 1rem;
+      background: white;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s;
+    }
+
+    .action-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-icon {
+      font-size: 1.75rem;
+    }
+
+    .action-text {
+      font-size: 0.85rem;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    /* Events Section */
+    .events-section h3 {
+      font-size: 1.1rem;
+      color: #1e293b;
+      margin: 0 0 1rem;
+    }
+
+    .events-list {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .event-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      flex: 1;
+    }
+
+    .event-date {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem;
+      background: #eff6ff;
+      border-radius: 8px;
+      min-width: 50px;
+    }
+
+    .event-day {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e40af;
+    }
+
+    .event-month {
+      font-size: 0.7rem;
+      color: #3b82f6;
+      text-transform: uppercase;
+    }
+
+    .event-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .event-title {
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .event-type {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .actions-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .profile-stats {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .events-list {
+        flex-direction: column;
+      }
+    }
+  `]
+})
+export class ParentDashboardComponent implements OnInit {
+  private parentService = inject(ParentService);
+  
+  data: DashboardData | null = null;
+  selectedChildId: string = '';
+  today = new Date();
+  defaultAvatar = '/assets/images/default-avatar.png';
+
+  ngOnInit() {
+    this.loadDashboard();
   }
 
-  /**
-   * Déconnecte l'utilisateur
-   */
-  logout() {
-      this.authService.logout();
+  loadDashboard() {
+    this.parentService.getDashboard(this.selectedChildId || undefined)
+      .subscribe({
+        next: (data) => {
+          this.data = data;
+          if (!this.selectedChildId && data.current_child) {
+            this.selectedChildId = data.current_child.id;
+          }
+        },
+        error: (err) => console.error('Error loading dashboard', err)
+      });
   }
 
-  /**
-   * Helper pour récupérer un créneau de cours spécifique dans la grille
-   */
-  getSlot(slots: CourseSlot[], day: string, time: string): CourseSlot | undefined {
-      return slots.find(s => s.day === day && s.startTime === time);
+  selectChild(child: Child) {
+    this.selectedChildId = child.id;
+    this.loadDashboard();
+  }
+
+  getPaymentPercentage(): number {
+    if (!this.data?.payment_status?.total) return 0;
+    return (this.data.payment_status.paid / this.data.payment_status.total) * 100;
+  }
+
+  getEvaluationType(type: string): string {
+    const types: { [key: string]: string } = {
+      'IO': 'Interro',
+      'DV': 'Devoir',
+      'CP': 'Compo',
+      'TP': 'TP'
+    };
+    return types[type] || type;
   }
 }

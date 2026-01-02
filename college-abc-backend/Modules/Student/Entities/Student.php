@@ -5,18 +5,25 @@ namespace Modules\Student\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 use Modules\Core\Entities\User;
 
 class Student extends Model
 {
-    use HasFactory, SoftDeletes, HasUuid, Searchable;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $fillable = [
-        'user_id', 'matricule', 'first_name', 'last_name',
-        'date_of_birth', 'gender', 'place_of_birth',
-        'address', 'photo', 'status', 'medical_info'
+        'user_id',
+        'matricule',
+        'first_name',
+        'last_name',
+        'date_of_birth',
+        'gender',
+        'place_of_birth',
+        'address',
+        'photo',
+        'status',
+        'medical_info'
     ];
 
     protected $casts = [
@@ -37,8 +44,8 @@ class Student extends Model
     public function parents()
     {
         return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'parent_id')
-                    ->withPivot('relationship', 'is_primary')
-                    ->withTimestamps();
+            ->withPivot('relationship', 'is_primary')
+            ->withTimestamps();
     }
 
     public function primaryParents()
@@ -54,35 +61,33 @@ class Student extends Model
     public function currentEnrollment()
     {
         return $this->hasOne(Enrollment::class)
-                    ->whereHas('academicYear', fn($q) => $q->where('is_current', true));
+            ->whereHas('academicYear', fn($q) => $q->where('is_current', true));
     }
 
-    // public function attendances()
-    // {
-    //     return $this->hasMany(\Modules\Attendance\Entities\Attendance::class);
-    // }
+    public function attendances()
+    {
+        return $this->hasMany(\Modules\Attendance\Entities\Attendance::class);
+    }
 
+    /**
+     * Get all grades for this student.
+     */
     public function grades()
     {
         return $this->hasMany(\Modules\Grade\Entities\Grade::class);
     }
 
-    public function evaluations()
+    public function currentClass()
     {
-        return $this->hasManyThrough(\Modules\Grade\Entities\Evaluation::class, \Modules\Grade\Entities\Grade::class, 'student_id', 'id', 'id', 'evaluation_id');
+        return $this->hasOneThrough(
+            \Modules\Academic\Entities\ClassRoom::class,
+            Enrollment::class,
+            'student_id',
+            'id',
+            'id',
+            'class_id'
+        )->whereHas('academicYear', fn($q) => $q->where('is_current', true));
     }
-
-    // public function currentClass()
-    // {
-    //     return $this->hasOneThrough(
-    //         \Modules\Academic\Entities\ClassRoom::class,
-    //         Enrollment::class,
-    //         'student_id',
-    //         'id',
-    //         'id',
-    //         'class_id'
-    //     )->whereHas('academicYear', fn($q) => $q->where('is_current', true));
-    // }
 
     // Scopes
     public function scopeActive($query)

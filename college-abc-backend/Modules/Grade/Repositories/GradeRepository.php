@@ -155,8 +155,15 @@ class GradeRepository
         $grades = $this->model->byEvaluation($evaluationId)->present()->get();
 
         $distribution = [
-            'A+' => 0, 'A' => 0, 'B+' => 0, 'B' => 0,
-            'C+' => 0, 'C' => 0, 'D+' => 0, 'D' => 0, 'F' => 0
+            'A+' => 0,
+            'A' => 0,
+            'B+' => 0,
+            'B' => 0,
+            'C+' => 0,
+            'C' => 0,
+            'D+' => 0,
+            'D' => 0,
+            'F' => 0
         ];
 
         foreach ($grades as $grade) {
@@ -222,15 +229,32 @@ class GradeRepository
             ->exists();
     }
 
-    public function canRecordGrade(int $evaluationId, int $studentId, int $teacherId): bool
+    public function canRecordGrade(int $evaluationId, int $studentId, $teacherId): bool
     {
         // Check if teacher teaches this subject in this class
         $evaluation = Evaluation::find($evaluationId);
 
         if (!$evaluation) return false;
 
-        return $evaluation->teacher_id === $teacherId &&
-               $evaluation->class->enrollments()->where('student_id', $studentId)->exists();
+        // Check if student belongs to class
+        $isEnrolled = $evaluation->class->enrollments()->where('student_id', $studentId)->exists();
+        if (!$isEnrolled) return false;
+
+        // Check user permissions
+        // Use a lightweight query or assume $teacherId is currently authenticated user ID
+
+        // 1. If user is the assigned teacher (use == for type-agnostic comparison since teacher_id is UUID)
+        if ($evaluation->teacher_id == $teacherId) {
+            return true;
+        }
+
+        // 2. If user is admin/manager
+        $user = \Modules\Core\Entities\User::find($teacherId);
+        if ($user && ($user->hasRole('super_admin') || $user->can('manage-academic') || $user->can('manage-grades'))) {
+            return true;
+        }
+
+        return false;
     }
 
     // Search and filter methods

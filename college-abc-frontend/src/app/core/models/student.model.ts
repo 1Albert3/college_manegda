@@ -1,20 +1,26 @@
 export interface Student {
     id?: string;
     matricule?: string;
-    first_name: string;
-    last_name: string;
-    date_of_birth: Date;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: Date | string;
+    placeOfBirth: string;
     gender: 'M' | 'F';
-    place_of_birth: string;
     address: string;
     photo?: string;
-    status?: string;
-    medical_info?: any;
+    status: 'active' | 'excluded' | 'transferred' | 'pending';
+    
+    // Relations
+    currentClass?: string; // Nom de la classe (ex: 6ème A)
+    parentName?: string;
+    parentPhone?: string;
+    parentEmail?: string;
+    cycle?: 'mp' | 'college' | 'lycee';
 }
 
 export interface Parent {
     id?: string;
-    name: string;
+    fullName: string;
     email: string;
     phone: string;
     relationship: 'pere' | 'mere' | 'tuteur';

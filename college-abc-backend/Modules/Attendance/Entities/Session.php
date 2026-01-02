@@ -5,7 +5,6 @@ namespace Modules\Attendance\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 use Modules\Academic\Entities\AcademicYear;
 use Modules\Academic\Entities\Subject;
@@ -14,7 +13,7 @@ use Modules\Core\Entities\User;
 
 class Session extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable;
 
     protected $table = 'class_sessions';
 

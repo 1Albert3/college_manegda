@@ -13,10 +13,12 @@ class TeacherSubject extends Pivot
     protected $table = 'teacher_subject';
 
     protected $fillable = [
-        'teacher_id', 'subject_id', 'academic_year_id'
+        'teacher_id', 'subject_id', 'class_room_id', 'academic_year_id', 'is_main_teacher'
     ];
 
     protected $casts = [
+        'class_room_id' => 'integer',
+        'is_main_teacher' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -35,6 +37,11 @@ class TeacherSubject extends Pivot
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function classRoom()
+    {
+        return $this->belongsTo(ClassRoom::class);
     }
 
     // Scopes

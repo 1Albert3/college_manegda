@@ -1,0 +1,249 @@
+<div class="space-y-6">
+  
+  <!-- Top Stat Cards -->
+  <!-- Top Stat Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up">
+    <!-- Card 1: Students -->
+    <div class="bg-white rounded-lg shadow-sm flex overflow-hidden h-24 transform hover:scale-105 transition-transform duration-200 cursor-pointer">
+      <div class="flex-1 p-4 flex flex-col justify-center border-l-4 border-gray-200">
+        <div class="text-3xl font-bold text-gray-700">{{ studentCount }}</div>
+        <div class="text-gray-500 text-sm font-medium">{{ isTeacher ? 'Mes Élèves' : 'Total Élèves' }}</div>
+      </div>
+      <div class="w-24 bg-red-500 flex items-center justify-center text-white">
+        <i class="pi pi-users text-4xl"></i>
+      </div>
+    </div>
+
+    <!-- Card 2: Classes / Teachers -->
+    <div class="bg-white rounded-lg shadow-sm flex overflow-hidden h-24 transform hover:scale-105 transition-transform duration-200 cursor-pointer">
+      <div class="flex-1 p-4 flex flex-col justify-center border-l-4 border-gray-200">
+        <div class="text-3xl font-bold text-gray-700">{{ isTeacher ? myClassesCount : teacherCount }}</div>
+        <div class="text-gray-500 text-sm font-medium">{{ isTeacher ? 'Mes Classes' : 'Enseignants' }}</div>
+      </div>
+      <div class="w-24 bg-orange-500 flex items-center justify-center text-white">
+        <i class="pi" [ngClass]="isTeacher ? 'pi-book' : 'pi-briefcase'" style="font-size: 2.25rem;"></i>
+      </div>
+    </div>
+
+    <!-- Card 3: Hours / Success Rate -->
+    <div class="bg-white rounded-lg shadow-sm flex overflow-hidden h-24 transform hover:scale-105 transition-transform duration-200 cursor-pointer">
+      <div class="flex-1 p-4 flex flex-col justify-center border-l-4 border-gray-200">
+        <div class="text-3xl font-bold text-gray-700">
+            {{ isTeacher ? hoursThisWeek + ' h' : (successRate | number:'1.0-1') + '%' }}
+        </div>
+        <div class="text-gray-500 text-sm font-medium">{{ isTeacher ? 'Cette semaine' : 'Taux de réussite' }}</div>
+      </div>
+      <div class="w-24 bg-teal-500 flex items-center justify-center text-white">
+        <i class="pi" [ngClass]="isTeacher ? 'pi-clock' : 'pi-chart-line'" style="font-size: 2.25rem;"></i>
+      </div>
+    </div>
+
+    <!-- Card 4: Exams / Average -->
+    <div class="bg-white rounded-lg shadow-sm flex overflow-hidden h-24 transform hover:scale-105 transition-transform duration-200 cursor-pointer">
+      <div class="flex-1 p-4 flex flex-col justify-center border-l-4 border-gray-200">
+        <div class="text-3xl font-bold text-gray-700">
+             {{ isTeacher ? upcomingExamsCount : (generalAverage | number:'1.0-1') + '/20' }}
+        </div>
+        <div class="text-gray-500 text-sm font-medium">{{ isTeacher ? 'A corriger' : 'Moyenne Générale' }}</div>
+      </div>
+      <div class="w-24 bg-green-600 flex items-center justify-center text-white">
+        <i class="pi" [ngClass]="isTeacher ? 'pi-file-edit' : 'pi-star'" style="font-size: 2.25rem;"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content Left (Calendar) -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Calendar Widget -->
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex gap-2">
+            <button class="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded hover:bg-gray-700">
+              <i class="pi pi-angle-left"></i>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded hover:bg-gray-700">
+              <i class="pi pi-angle-right"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-4">
+            <button class="bg-gray-500 text-white px-3 py-1 text-sm rounded hover:bg-gray-600">Aujourd'hui</button>
+            <h2 class="text-2xl text-gray-700 font-light">novembre 2024</h2>
+          </div>
+
+          <div class="bg-gray-800 rounded overflow-hidden flex text-sm">
+            <button class="px-3 py-1 text-white bg-gray-900">Mois</button>
+            <button class="px-3 py-1 text-gray-300 hover:text-white">Jour</button>
+            <button class="px-3 py-1 text-gray-300 hover:text-white">Planning</button>
+          </div>
+        </div>
+
+        <!-- Mock Calendar Grid -->
+        <div class="border border-gray-200">
+          <!-- Calendar Header -->
+          <div class="grid grid-cols-7 text-center border-b border-gray-200 text-teal-600 font-medium py-2 bg-white">
+            <div>lun.</div><div>mar.</div><div>mer.</div><div>jeu.</div><div>ven.</div><div>sam.</div><div>dim.</div>
+          </div>
+          
+          <!-- Calendar Body Row 1 -->
+          <div class="grid grid-cols-7 h-24 border-b border-gray-200 text-sm relative">
+             <!-- Week Number Col (absolute or separate?) let's integrate week num in first cell -->
+             <div class="border-r border-gray-100 p-1 text-gray-300 relative">
+               <span class="absolute top-1 left-1 text-xs">Sem.44</span>
+               <span class="absolute top-1 right-2">28</span>
+             </div>
+             <div class="border-r border-gray-100 p-1 text-gray-300 text-right">29</div>
+             <div class="border-r border-gray-100 p-1 text-gray-300 text-right">30</div>
+             <div class="border-r border-gray-100 p-1 text-gray-300 text-right">31</div>
+             <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">1</div>
+             <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right bg-blue-50/30">2</div>
+             <div class="p-1 text-teal-500 font-bold text-right bg-blue-50/30">3</div>
+          </div>
+
+           <!-- Calendar Body Row 2 -->
+           <div class="grid grid-cols-7 h-24 border-b border-gray-200 text-sm">
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right bg-yellow-50 relative">
+              <span class="absolute top-1 left-1 text-xs text-gray-400 font-normal">Sem.45</span>
+              4
+            </div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">5</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">6</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">7</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">8</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right bg-blue-50/30">9</div>
+            <div class="p-1 text-teal-500 font-bold text-right bg-blue-50/30">10</div>
+         </div>
+
+         <!-- Calendar Body Row 3 -->
+         <div class="grid grid-cols-7 h-24 border-b border-gray-200 text-sm">
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right relative">
+              <span class="absolute top-1 left-1 text-xs text-gray-400 font-normal">Sem.46</span>
+              11
+            </div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">12</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">13</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">14</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right">15</div>
+            <div class="border-r border-gray-100 p-1 text-teal-500 font-bold text-right bg-blue-50/30">16</div>
+            <div class="p-1 text-teal-500 font-bold text-right bg-blue-50/30">17</div>
+         </div>
+         
+         <!-- More rows mock... -->
+        </div>
+
+        <div class="mt-4 flex gap-4 text-sm text-teal-600 font-medium">
+            <button class="hover:underline flex items-center gap-1"><i class="pi pi-plus"></i> Ajouter un événement</button>
+            <button class="hover:underline ml-auto flex items-center gap-1"><i class="pi pi-list"></i> Liste des évènements</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar Widgets -->
+    <div class="space-y-6">
+      
+      <!-- Vos prochains rendez-vous -->
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="bg-teal-500 text-white px-4 py-3 font-medium text-sm">
+          Vos prochains rendez-vous
+        </div>
+        <div class="divide-y divide-gray-100">
+            <!-- Item 1 -->
+            <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+               <div>
+                  <div class="font-bold text-gray-700">ETUDIANTS ET PROFS</div>
+                  <div class="mt-1">
+                      <span class="bg-pink-800 text-white text-[10px] px-2 py-0.5 rounded">Autre rendez-vous</span>
+                  </div>
+               </div>
+               <div class="text-right">
+                  <div class="text-blue-500">28/11/2024 - 17:00</div>
+                  <div class="text-gray-500 text-xs">Confirmé</div>
+               </div>
+            </div>
+            <!-- Item 2 -->
+             <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+                <div>
+                   <div class="font-bold text-gray-700">RDV PARENT</div>
+                   <div class="mt-1">
+                       <span class="bg-pink-800 text-white text-[10px] px-2 py-0.5 rounded">Autre rendez-vous</span>
+                   </div>
+                </div>
+                <div class="text-right">
+                   <div class="text-blue-500">29/11/2024 - 18:00</div>
+                   <div class="text-gray-500 text-xs">Confirmé</div>
+                </div>
+             </div>
+        </div>
+      </div>
+
+      <!-- Vos événements -->
+       <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="bg-pink-800 text-white px-4 py-3 font-medium text-sm">
+          Vos événements
+        </div>
+        <div class="divide-y divide-gray-100">
+            <!-- Item 1 -->
+            <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+               <div class="flex items-center gap-3">
+                  <span class="text-gray-500">1</span>
+                  <span class="text-blue-500 font-medium">Le séminaire</span>
+               </div>
+               <div class="text-right flex items-center gap-2">
+                   <span class="bg-green-600 text-white text-[10px] px-2 py-0.5 rounded">Evénement</span>
+                   <span class="text-gray-600 text-xs">28/11/2024 - 09:00</span>
+               </div>
+            </div>
+            <!-- Item 2 -->
+             <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+                <div class="flex items-center gap-3">
+                   <span class="text-gray-500">2</span>
+                   <span class="text-blue-500 font-medium">Porte ouverte</span>
+                </div>
+                <div class="text-right flex items-center gap-2">
+                    <span class="bg-green-600 text-white text-[10px] px-2 py-0.5 rounded">Evénement</span>
+                    <span class="text-gray-600 text-xs">29/11/2024 - 11:00</span>
+                </div>
+             </div>
+        </div>
+      </div>
+
+      <!-- Listes des tâches -->
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="bg-gray-700 text-white px-4 py-3 font-medium text-sm">
+          Listes des tâches
+        </div>
+        <div class="p-3 border-b border-gray-100">
+             <input type="text" placeholder="Ajouter une tâche" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500">
+        </div>
+        <div class="divide-y divide-gray-100">
+            <!-- Item 1 -->
+            <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+               <div class="flex items-center gap-3">
+                  <span class="text-gray-500">1</span>
+                  <input type="checkbox" class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                  <span class="text-gray-600">Renouveler le contra..</span>
+               </div>
+               <div class="flex items-center gap-2">
+                   <span class="text-red-500 text-xs font-medium">16-06-2023</span>
+                   <button class="bg-orange-400 text-white p-1 rounded hover:bg-orange-500"><i class="pi pi-pencil text-xs"></i></button>
+               </div>
+            </div>
+            <!-- Item 2 -->
+             <div class="p-3 flex items-center justify-between text-sm hover:bg-gray-50">
+                <div class="flex items-center gap-3">
+                   <span class="text-gray-500">2</span>
+                   <input type="checkbox" class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                   <span class="text-gray-600">Renouveler assurance</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-red-500 text-xs font-medium">19-01-2023</span>
+                    <button class="bg-orange-400 text-white p-1 rounded hover:bg-orange-500"><i class="pi pi-pencil text-xs"></i></button>
+                </div>
+             </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

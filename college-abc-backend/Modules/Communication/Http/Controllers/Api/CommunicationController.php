@@ -16,6 +16,8 @@ use App\Http\Responses\ApiResponse;
  */
 class CommunicationController extends Controller
 {
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
     public function __construct(
         private CommunicationService $communicationService
     ) {}
@@ -25,6 +27,8 @@ class CommunicationController extends Controller
      */
     public function send(Request $request): JsonResponse
     {
+        $this->authorize('send', CommunicationLog::class);
+
         $request->validate([
             'channel' => 'required|string|in:email,sms,push,in_app',
             'recipient' => 'required|string',
@@ -53,6 +57,8 @@ class CommunicationController extends Controller
      */
     public function sendToUser(Request $request): JsonResponse
     {
+        $this->authorize('send', CommunicationLog::class);
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'template' => 'required|string',
@@ -85,6 +91,8 @@ class CommunicationController extends Controller
      */
     public function sendBulk(Request $request): JsonResponse
     {
+        $this->authorize('sendBulk', CommunicationLog::class);
+
         $request->validate([
             'template' => 'required|string',
             'recipients' => 'required|array|min:1',
@@ -117,6 +125,8 @@ class CommunicationController extends Controller
      */
     public function testChannel(Request $request): JsonResponse
     {
+        $this->authorize('send', CommunicationLog::class); // Only admins/staff
+
         $request->validate([
             'channel' => 'required|string|in:email,sms,push,in_app',
             'recipient' => 'required|string',
@@ -139,6 +149,8 @@ class CommunicationController extends Controller
      */
     public function logs(Request $request): JsonResponse
     {
+        $this->authorize('viewLogs', CommunicationLog::class);
+
         $query = CommunicationLog::with(['user'])
             ->orderBy('created_at', 'desc');
 
@@ -165,6 +177,8 @@ class CommunicationController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
+        $this->authorize('viewLogs', CommunicationLog::class);
+
         $stats = $this->communicationService->getStats($request->all());
 
         return ApiResponse::success($stats, 'Statistiques récupérées');
@@ -175,6 +189,12 @@ class CommunicationController extends Controller
      */
     public function templates(Request $request): JsonResponse
     {
+        // Allowed for everyone roughly, or check auth?
+        // Let's assume anyone logged in can see templates if they can send.
+        // But templates list might be needed for UI. 
+        // We'll trust auth:sanctum middleware for now + send check if strict.
+        $this->authorize('viewAny', CommunicationLog::class); // Reusing a policy method or just check permission
+
         $query = CommunicationTemplate::active();
 
         if ($request->has('channel')) {
@@ -195,6 +215,8 @@ class CommunicationController extends Controller
      */
     public function retryFailed(Request $request): JsonResponse
     {
+        $this->authorize('send', CommunicationLog::class);
+
         $retried = $this->communicationService->retryFailed();
 
         return ApiResponse::success([

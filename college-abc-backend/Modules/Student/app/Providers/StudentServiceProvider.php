@@ -4,6 +4,10 @@ namespace Modules\Student\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
+use Illuminate\Support\Facades\Gate;
+use Modules\Student\Policies\StudentPolicy;
+use Modules\Student\Entities\Student;
+
 class StudentServiceProvider extends ServiceProvider
 {
     /**
@@ -15,6 +19,7 @@ class StudentServiceProvider extends ServiceProvider
     {
         $this->registerConfig();
         $this->loadMigrationsFrom(module_path('Student', 'Database/Migrations'));
+        Gate::policy(Student::class, StudentPolicy::class);
     }
 
     /**

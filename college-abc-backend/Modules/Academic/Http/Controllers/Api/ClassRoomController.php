@@ -17,8 +17,8 @@ class ClassRoomController extends Controller
     public function __construct(
         private ClassRoomService $classRoomService
     ) {
-        $this->middleware('permission:view-academic')->only(['index', 'show', 'byLevel', 'byStream', 'active', 'grouped', 'stats', 'findByName', 'students', 'subjects', 'canDelete', 'attendanceStats']);
-        $this->middleware('permission:manage-academic')->except(['index', 'show', 'byLevel', 'byStream', 'active', 'grouped', 'stats', 'findByName', 'students', 'subjects', 'canDelete', 'attendanceStats']);
+        $this->middleware('permission:view-academic,sanctum')->only(['index', 'show', 'byLevel', 'byStream', 'active', 'grouped', 'stats', 'findByName', 'students', 'subjects', 'canDelete', 'attendanceStats']);
+        $this->middleware('permission:manage-academic,sanctum')->except(['index', 'show', 'byLevel', 'byStream', 'active', 'grouped', 'stats', 'findByName', 'students', 'subjects', 'canDelete', 'attendanceStats']);
     }
 
     public function index(Request $request): JsonResponse
@@ -201,7 +201,9 @@ class ClassRoomController extends Controller
     {
         $classRoom = $this->classRoomService->findClassRoom($id);
 
-        $students = $classRoom->currentStudents();
+        // FIX: 'currentStudents()' n'existe pas dans le modèle ClassRoom.
+        // Utilisation de la relation 'students' qui filtre déjà par inscription active via hasManyThrough + whereHas
+        $students = $classRoom->students;
 
         return ApiResponse::success($students);
     }
@@ -210,7 +212,8 @@ class ClassRoomController extends Controller
     {
         $classRoom = $this->classRoomService->findClassRoom($id);
 
-        $subjects = $classRoom->currentSubjects();
+        // FIX: Utilisation de 'subjects' au lieu de 'currentSubjects' pour éviter l'erreur de colonne manquante
+        $subjects = $classRoom->subjects;
 
         return ApiResponse::success($subjects);
     }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Responses\ApiResponse;
 use App\Http\Controllers\Controller;
 use Modules\Grade\Services\GradeService;
+use Modules\Grade\Services\ReportCardService;
 use Modules\Grade\Entities\Grade;
 use Exception;
 
@@ -18,11 +19,15 @@ use Exception;
  */
 class GradeController extends Controller
 {
-    protected $gradeService;
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
-    public function __construct(GradeService $gradeService)
+    protected $gradeService;
+    protected $reportCardService;
+
+    public function __construct(GradeService $gradeService, ReportCardService $reportCardService)
     {
         $this->gradeService = $gradeService;
+        $this->reportCardService = $reportCardService;
     }
 
     /**
@@ -30,17 +35,30 @@ class GradeController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $filters = $request->only([
-                'student_id', 'evaluation_id', 'academic_year_id', 'subject_id', 'class_id',
-                'is_absent', 'grade_from', 'grade_to', 'recorded_from', 'recorded_to',
-                'search', 'sort_by', 'sort_order', 'per_page'
+                'student_id',
+                'evaluation_id',
+                'academic_year_id',
+                'subject_id',
+                'class_id',
+                'is_absent',
+                'grade_from',
+                'grade_to',
+                'recorded_from',
+                'recorded_to',
+                'search',
+                'sort_by',
+                'sort_order',
+                'per_page'
             ]);
 
             $grades = app(\Modules\Grade\Repositories\GradeRepository::class)
-                    ->search($filters, $request->get('per_page', 15));
+                ->search($filters, $request->get('per_page', 15));
 
-            return ApiResponse::success('Notes récupérées avec succès', $grades);
+            return ApiResponse::success($grades, 'Notes récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get grades list', [
                 'error' => $e->getMessage(),
@@ -55,6 +73,8 @@ class GradeController extends Controller
      */
     public function record(Request $request): JsonResponse
     {
+        $this->authorize('create', Grade::class);
+
         try {
             $data = $request->validate([
                 'student_id' => 'required|exists:students,id',
@@ -65,10 +85,18 @@ class GradeController extends Controller
                 'comments' => 'nullable|string|max:500',
             ]);
 
-            $userId = Auth::id() ?? 1; // Default to super admin for testing
+            // Security: Check if teacher owns the evaluation
+            if ($request->user()->hasRole('teacher')) {
+                $evaluation = \Modules\Grade\Entities\Evaluation::findOrFail($data['evaluation_id']);
+                if ($evaluation->teacher_id !== $request->user()->id && !$request->user()->can('manage-grades')) {
+                    abort(403, 'Vous ne pouvez saisir des notes que pour vos propres évaluations.');
+                }
+            }
+
+            $userId = $request->user()->id;
             $grade = $this->gradeService->recordGrade($data, $userId);
 
-            return ApiResponse::success('Note enregistrée avec succès', $grade, 201);
+            return ApiResponse::success($grade, 'Note enregistrée avec succès', 201);
         } catch (Exception $e) {
             Log::error('Failed to record grade', [
                 'data' => $request->all(),
@@ -83,21 +111,43 @@ class GradeController extends Controller
      */
     public function bulkRecord(Request $request): JsonResponse
     {
+        $this->authorize('create', Grade::class);
+
         try {
             $data = $request->validate([
+                'evaluation_id' => 'required|exists:evaluations,id',
                 'grades' => 'required|array|min:1',
                 'grades.*.student_id' => 'required|exists:students,id',
-                'grades.*.evaluation_id' => 'required|exists:evaluations,id',
-                'grades.*.score' => 'nullable|decimal:0,2|min:0|max:20',
-                'grades.*.coefficient' => 'nullable|decimal:0,1|min:0.1|max:5',
+                'grades.*.score' => 'nullable|numeric|min:0|max:20',
+                'grades.*.coefficient' => 'nullable|numeric|min:0.1|max:5',
                 'grades.*.is_absent' => 'nullable|boolean',
+                'grades.*.comment' => 'nullable|string|max:500',
                 'grades.*.comments' => 'nullable|string|max:500',
             ]);
 
-            $userId = Auth::id() ?? 1; // Default to super admin for testing
-            $grades = $this->gradeService->bulkRecordGrades($data['grades'], $userId);
+            $userId = $request->user()->id;
+            $evaluationId = $data['evaluation_id'];
 
-            return ApiResponse::success('Notes enregistrées en masse avec succès', $grades, 201);
+            // Inject evaluation_id into each grade
+            $gradesWithEvaluation = array_map(function ($grade) use ($evaluationId) {
+                $grade['evaluation_id'] = $evaluationId;
+                // Normalize comment/comments field
+                if (isset($grade['comment']) && !isset($grade['comments'])) {
+                    $grade['comments'] = $grade['comment'];
+                }
+                unset($grade['comment']);
+                return $grade;
+            }, $data['grades']);
+
+            $grades = $this->gradeService->bulkRecordGrades($gradesWithEvaluation, $userId);
+
+            return ApiResponse::success($grades, 'Notes enregistrées en masse avec succès', 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validation failed for bulk grade recording', [
+                'errors' => $e->errors(),
+                'input' => $request->all()
+            ]);
+            return ApiResponse::error('Validation échouée: ' . implode(', ', array_map(fn($msgs) => implode(', ', $msgs), $e->errors())), 422);
         } catch (Exception $e) {
             Log::error('Failed to bulk record grades', [
                 'data' => $request->all(),
@@ -110,12 +160,15 @@ class GradeController extends Controller
     /**
      * Display the specified grade.
      */
-    public function show(Grade $grade): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        try {
-            $grade->load(['student', 'evaluation.subject', 'evaluation.teacher', 'recorder']);
+        $grade = Grade::with(['student', 'evaluation.subject', 'evaluation.teacher', 'recorder'])
+            ->findOrFail($id);
 
-            return ApiResponse::success('Note récupérée avec succès', $grade);
+        $this->authorize('view', $grade);
+
+        try {
+            return ApiResponse::success($grade, 'Note récupérée avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get grade', [
                 'grade_id' => $grade->id,
@@ -128,8 +181,11 @@ class GradeController extends Controller
     /**
      * Update the specified grade.
      */
-    public function update(Request $request, Grade $grade): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
+        $grade = Grade::findOrFail($id);
+        $this->authorize('update', $grade);
+
         try {
             $data = $request->validate([
                 'score' => 'nullable|decimal:0,2|min:0|max:20',
@@ -140,7 +196,7 @@ class GradeController extends Controller
 
             $updatedGrade = $this->gradeService->updateGrade($grade, $data);
 
-            return ApiResponse::success('Note mise à jour avec succès', $updatedGrade);
+            return ApiResponse::success($updatedGrade, 'Note mise à jour avec succès');
         } catch (Exception $e) {
             Log::error('Failed to update grade', [
                 'grade_id' => $grade->id,
@@ -154,8 +210,11 @@ class GradeController extends Controller
     /**
      * Remove the specified grade (soft delete).
      */
-    public function destroy(Grade $grade): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
+        $grade = Grade::findOrFail($id);
+        $this->authorize('delete', $grade);
+
         try {
             $grade->delete();
 
@@ -174,6 +233,9 @@ class GradeController extends Controller
      */
     public function restore($gradeId): JsonResponse
     {
+        // Restore usually requires admin privileges or manage-grades
+        $this->authorize('create', Grade::class);
+
         try {
             $restored = app(\Modules\Grade\Repositories\GradeRepository::class)->restore($gradeId);
 
@@ -196,6 +258,8 @@ class GradeController extends Controller
      */
     public function forceDelete($gradeId): JsonResponse
     {
+        $this->authorize('forceDelete', Grade::class); // Needs policy method or generic check
+
         try {
             $deleted = app(\Modules\Grade\Repositories\GradeRepository::class)->forceDelete($gradeId);
 
@@ -218,9 +282,16 @@ class GradeController extends Controller
      */
     public function getByStudent(int $studentId, Request $request): JsonResponse
     {
+        // Use student policy or check if user is parent/student
+        $student = \Modules\Student\Entities\Student::findOrFail($studentId);
+        // Authorization check logic reused from StudentPolicy usually, or manual check here:
+        if ($request->user()->cant('view', $student) && $request->user()->cant('view-grades')) {
+            abort(403);
+        }
+
         try {
             $grades = app(\Modules\Grade\Repositories\GradeRepository::class)
-                    ->getByStudent($studentId);
+                ->getByStudent($studentId);
 
             if ($request->has('academic_year_id')) {
                 $grades = $grades->whereHas('evaluation', function ($q) use ($request) {
@@ -228,7 +299,7 @@ class GradeController extends Controller
                 });
             }
 
-            return ApiResponse::success('Notes de l\'élève récupérées avec succès', $grades);
+            return ApiResponse::success($grades, 'Notes de l\'élève récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get student grades', [
                 'student_id' => $studentId,
@@ -243,11 +314,14 @@ class GradeController extends Controller
      */
     public function getByEvaluation(int $evaluationId): JsonResponse
     {
+        $evaluation = \Modules\Grade\Entities\Evaluation::findOrFail($evaluationId);
+        $this->authorize('view', $evaluation); // Use EvaluationPolicy
+
         try {
             $grades = app(\Modules\Grade\Repositories\GradeRepository::class)
-                    ->getClassGradesForEvaluation($evaluationId);
+                ->getClassGradesForEvaluation($evaluationId);
 
-            return ApiResponse::success('Notes de l\'évaluation récupérées avec succès', $grades);
+            return ApiResponse::success($grades, 'Notes de l\'évaluation récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get evaluation grades', [
                 'evaluation_id' => $evaluationId,
@@ -262,9 +336,15 @@ class GradeController extends Controller
      */
     public function getStudentReport(int $studentId, Request $request): JsonResponse
     {
+        $student = \Modules\Student\Entities\Student::findOrFail($studentId);
+        if ($request->user()->cant('view', $student) && $request->user()->cant('view-grades')) {
+            abort(403);
+        }
+
         try {
             $academicYearId = $request->get('academic_year_id');
-            $report = $this->gradeService->getStudentGradesReport($studentId, $academicYearId);
+
+            $report = $this->reportCardService->calculateStudentAverages($studentId, $academicYearId);
 
             return ApiResponse::success($report, 'Rapport des notes de l\'élève récupéré avec succès');
         } catch (Exception $e) {
@@ -277,15 +357,23 @@ class GradeController extends Controller
     }
 
     /**
-     * Get class grades report.
+     * Get class grades report with ranking (Bulletin de classe).
      */
     public function getClassReport(int $classId, Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $academicYearId = $request->get('academic_year_id');
-            $report = $this->gradeService->getClassGradesReport($classId, $academicYearId);
+            $periodId = $request->get('period_id');
 
-            return ApiResponse::success($report, 'Rapport des notes de la classe récupéré avec succès');
+            if (!$academicYearId) {
+                return ApiResponse::error('L\'année académique est requise', 400);
+            }
+
+            $report = $this->reportCardService->generateClassReport($classId, $academicYearId, $periodId);
+
+            return ApiResponse::success($report, 'Classement de la classe récupéré avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get class grades report', [
                 'class_id' => $classId,
@@ -300,6 +388,12 @@ class GradeController extends Controller
      */
     public function getTeacherReport(int $teacherId, Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+        // Teacher can see own report
+        if ($request->user()->hasRole('teacher') && $request->user()->id !== $teacherId) {
+            abort(403);
+        }
+
         try {
             $academicYearId = $request->get('academic_year_id');
             $report = $this->gradeService->getTeacherGradesReport($teacherId, $academicYearId);
@@ -319,6 +413,12 @@ class GradeController extends Controller
      */
     public function generateReportCardPDF(int $studentId, Request $request): JsonResponse
     {
+        $student = \Modules\Student\Entities\Student::findOrFail($studentId);
+        // Authorization...
+        if ($request->user()->cant('view', $student) && $request->user()->cant('view-grades')) {
+            abort(403);
+        }
+
         try {
             $academicYearId = $request->get('academic_year_id');
 
@@ -343,11 +443,18 @@ class GradeController extends Controller
     /**
      * Download student report card PDF.
      */
-    public function downloadReportCardPDF(int $studentId, int $academicYearId)
+    public function downloadReportCardPDF(Request $request, int $studentId, int $academicYearId)
     {
+        // Auth check... might come from query link, need token in header usually or specific signed URL logic.
+        // Assuming API auth middleware is active.
+        $student = \Modules\Student\Entities\Student::findOrFail($studentId);
+        if ($request->user()->cant('view', $student) && $request->user()->cant('view-grades')) {
+            abort(403);
+        }
+
         try {
             return app(\Modules\Grade\Services\EvaluationService::class)
-                   ->generateReportCardPDF($studentId, $academicYearId);
+                ->generateReportCardPDF($studentId, $academicYearId);
         } catch (Exception $e) {
             Log::error('Failed to download report card PDF', [
                 'student_id' => $studentId,
@@ -363,10 +470,13 @@ class GradeController extends Controller
      */
     public function generateClassGradesPDF(int $classId, Request $request)
     {
+        // Only teachers associated or admins
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $academicYearId = $request->get('academic_year_id');
             return app(\Modules\Grade\Services\EvaluationService::class)
-                   ->generateClassGradesPDF($classId, $academicYearId);
+                ->generateClassGradesPDF($classId, $academicYearId);
         } catch (Exception $e) {
             Log::error('Failed to generate class grades PDF', [
                 'class_id' => $classId,
@@ -381,10 +491,12 @@ class GradeController extends Controller
      */
     public function getAbsent(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $filters = $request->only(['evaluation_id', 'class_id']);
             $grades = app(\Modules\Grade\Repositories\GradeRepository::class)
-                    ->getAbsentGrades($filters);
+                ->getAbsentGrades($filters);
 
             return ApiResponse::success('Notes d\'absence récupérées avec succès', $grades);
         } catch (Exception $e) {
@@ -400,10 +512,12 @@ class GradeController extends Controller
      */
     public function getStatistics(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $academicYearId = $request->get('academic_year_id');
             $stats = app(\Modules\Grade\Services\EvaluationService::class)
-                   ->getAcademicYearStats($academicYearId);
+                ->getAcademicYearStats($academicYearId);
 
             return ApiResponse::success($stats, 'Statistiques récupérées avec succès');
         } catch (Exception $e) {
@@ -419,6 +533,8 @@ class GradeController extends Controller
      */
     public function getSchoolStats(): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         try {
             $stats = app(\Modules\Grade\Services\EvaluationService::class)->getSchoolStats();
 

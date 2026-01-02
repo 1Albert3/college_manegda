@@ -5,17 +5,23 @@ namespace Modules\Grade\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 
 class Grade extends Model
 {
-    use HasFactory, SoftDeletes, HasUuid, Searchable;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $fillable = [
-        'student_id', 'evaluation_id', 'score', 'coefficient',
-        'weighted_score', 'grade_letter', 'is_absent', 'comments',
-        'recorded_at', 'recorded_by'
+        'student_id',
+        'evaluation_id',
+        'score',
+        'coefficient',
+        'weighted_score',
+        'grade_letter',
+        'is_absent',
+        'comments',
+        'recorded_at',
+        'recorded_by'
     ];
 
     protected $casts = [
@@ -89,7 +95,7 @@ class Grade extends Model
     public function scopeByClass($query, $classId)
     {
         return $query->whereHas('evaluation', function ($q) use ($classId) {
-            $q->where('class_id', $classId);
+            $q->where('class_room_id', $classId);
         });
     }
 

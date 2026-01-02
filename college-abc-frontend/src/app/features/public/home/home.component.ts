@@ -15,7 +15,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
 
       <!-- Contenu -->
       <div class="relative z-20 text-center text-white px-6 max-w-5xl mx-auto" data-aos="fade-up" data-aos-duration="1000">
-        <h1 class="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight drop-shadow-lg">
+        <h1 class="text-3xl md:text-5xl lg:text-7xl font-serif font-bold mb-6 leading-tight drop-shadow-lg">
           L'excellence académique, <br/>
           <span class="text-secondary">la foi en héritage</span>
         </h1>
@@ -42,7 +42,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
     <section class="py-24 bg-neutral-light">
       <div class="container mx-auto px-6">
         <div class="text-center mb-20" data-aos="fade-up">
-          <h2 class="text-4xl md:text-5xl font-serif font-bold text-primary mb-6">Pourquoi choisir le Collège Privé Wend-Manegda ?</h2>
+          <h2 class="text-3xl md:text-4xl lg:text-5xl font-serif font-bold text-primary mb-6">Pourquoi choisir le Collège Privé Wend-Manegda ?</h2>
           <div class="w-24 h-1.5 bg-secondary mx-auto rounded-full"></div>
         </div>
 

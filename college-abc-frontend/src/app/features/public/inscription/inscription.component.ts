@@ -58,7 +58,7 @@ import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
       <div class="container mx-auto px-6">
         <div class="text-center mb-16" data-aos="fade-up">
           <h2 class="text-3xl font-serif font-bold text-primary mb-4">Procédure d'Inscription</h2>
-          <div class="flex justify-center gap-4 mb-8">
+          <div class="flex flex-wrap justify-center gap-4 mb-8">
              <button (click)="activeTab = 'new'" [class]="activeTab === 'new' ? 'bg-primary text-white' : 'bg-white text-gray-600'" class="px-6 py-2 rounded-full font-bold transition-all shadow-md">Nouveaux Élèves</button>
              <button (click)="activeTab = 'old'" [class]="activeTab === 'old' ? 'bg-primary text-white' : 'bg-white text-gray-600'" class="px-6 py-2 rounded-full font-bold transition-all shadow-md">Réinscriptions</button>
           </div>
@@ -309,8 +309,11 @@ export class InscriptionComponent {
     parentPhone: ['', Validators.required]
   });
 
+  isLoading = false;
+
   onSubmit() {
     if (this.enrollmentForm.valid) {
+      this.isLoading = true;
       const formValue = this.enrollmentForm.value;
       const requestData: any = {
         student: {
@@ -318,25 +321,51 @@ export class InscriptionComponent {
           firstName: formValue.firstName,
           birthDate: formValue.birthDate,
           birthPlace: formValue.birthPlace,
-          address: formValue.address,
+          address: formValue.address, // Correction: s'assurer que ce champ est bien rempli dans le formulaire
           gender: formValue.gender,
           requestedClass: formValue.requestedClass
         },
-        parent: {
-          fullName: formValue.parentName,
-          relationship: formValue.parentRelationship,
+        parents: { // Correction: 'parents' au lieu de 'parent' pour matcher le Service
+          fatherName: formValue.parentRelationship === 'pere' ? formValue.parentName : '',
+          motherName: formValue.parentRelationship === 'mere' ? formValue.parentName : '',
           email: formValue.parentEmail,
-          phone: formValue.parentPhone
+          fatherPhone: formValue.parentPhone, // Simplification pour l'exemple
+          motherPhone: '',
+          address: formValue.address
+        },
+        documents: {
+            reportCards: null,
+            birthCertificate: null
         }
       };
 
+      console.log('Envoi des données:', requestData);
+
       this.enrollmentService.submitEnrollment(requestData).subscribe({
         next: (response) => {
-          alert('Votre demande a été envoyée avec succès !');
+          console.log('Réponse succès:', response);
+          this.isLoading = false;
+          alert('Votre demande a été envoyée avec succès ! Matricule: ' + response.data.matricule);
           this.enrollmentForm.reset();
         },
-        error: (err) => console.error(err)
+        error: (err) => {
+          console.error('Erreur inscription:', err);
+          this.isLoading = false;
+          let errorMessage = 'Erreur lors de l\'inscription';
+          
+          if (err.status === 422 && err.error && err.error.errors) {
+             // Erreur de validation Laravel
+             errorMessage = 'Erreur de validation :\n' + Object.values(err.error.errors).join('\n');
+             console.log('Détails validation:', err.error.errors);
+          } else if (err.error && err.error.message) {
+             errorMessage = err.error.message;
+          }
+
+          alert(errorMessage);
+        }
       });
+    } else {
+        alert('Veuillez remplir tous les champs obligatoires.');
     }
   }
 }

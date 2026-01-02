@@ -8,9 +8,11 @@ export interface EnrollmentRequest {
     firstName: string;
     lastName: string;
     birthDate: string;
+    birthPlace: string;
+    address: string; // Ajout du champ manquant dans l'interface
     gender: string;
     previousSchool: string;
-    gradeLevel: string;
+    requestedClass: string;
   };
   parents: {
     fatherName: string;
@@ -43,9 +45,11 @@ export class EnrollmentService {
     formData.append('student[firstName]', data.student.firstName);
     formData.append('student[lastName]', data.student.lastName);
     formData.append('student[birthDate]', data.student.birthDate);
+    formData.append('student[birthPlace]', data.student.birthPlace);
+    formData.append('student[address]', data.student.address); // Ajout du champ manquant
     formData.append('student[gender]', data.student.gender);
-    formData.append('student[previousSchool]', data.student.previousSchool);
-    formData.append('student[gradeLevel]', data.student.gradeLevel);
+    formData.append('student[previousSchool]', data.student.previousSchool || '');
+    formData.append('student[requestedClass]', data.student.requestedClass);
 
     // Append parent data
     formData.append('parents[fatherName]', data.parents.fatherName);
@@ -64,5 +68,26 @@ export class EnrollmentService {
     }
 
     return this.http.post(`${this.apiUrl}/enroll`, formData);
+  }
+
+  /**
+   * Récupérer les inscriptions (filtre par cycle possible)
+   */
+  getEnrollments(cycle: string = 'mp', params?: any): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${cycle}/enrollments`, { params });
+  }
+
+  /**
+   * Valider une inscription
+   */
+  validateEnrollment(cycle: string, id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${cycle}/enrollments/${id}/validate`, {});
+  }
+
+  /**
+   * Refuser une inscription
+   */
+  rejectEnrollment(cycle: string, id: string, reason: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${cycle}/enrollments/${id}/reject`, { motif: reason });
   }
 }

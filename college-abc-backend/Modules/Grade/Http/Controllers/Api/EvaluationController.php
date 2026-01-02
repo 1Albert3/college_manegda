@@ -17,6 +17,8 @@ use Exception;
  */
 class EvaluationController extends Controller
 {
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
     protected $evaluationService;
 
     public function __construct(EvaluationService $evaluationService)
@@ -29,17 +31,36 @@ class EvaluationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Evaluation::class);
+
         try {
             $filters = $request->only([
-                'subject_id', 'class_id', 'teacher_id', 'academic_year_id',
-                'type', 'period', 'status', 'date_from', 'date_to',
-                'search', 'sort_by', 'sort_order', 'per_page'
+                'subject_id',
+                'class_id',
+                'teacher_id',
+                'academic_year_id',
+                'type',
+                'period',
+                'status',
+                'date_from',
+                'date_to',
+                'search',
+                'sort_by',
+                'sort_order',
+                'per_page'
             ]);
 
-            $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                          ->search($filters, $request->get('per_page', 15));
+            // Filter for teachers: only show their own unless generic view-all
+            // This logic can be in Repository or here
+            $user = $request->user();
+            if ($user->hasRole('teacher') && !$user->can('manage-academic')) {
+                $filters['teacher_id'] = $user->id;
+            }
 
-            return ApiResponse::success('Évaluations récupérées avec succès', $evaluations);
+            $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
+                ->search($filters, $request->get('per_page', 15));
+
+            return ApiResponse::success($evaluations, 'Évaluations récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get evaluations list', [
                 'error' => $e->getMessage(),
@@ -54,29 +75,57 @@ class EvaluationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Evaluation::class);
+
         try {
             $data = $request->validate([
-                'name' => 'required|string|max:255',
+                'title' => 'required|string|max:255',
                 'code' => 'nullable|string|max:50',
                 'description' => 'nullable|string',
-                'type' => 'required|in:continuous,semester,annual',
-                'period' => 'required|string|max:50',
-                'coefficient' => 'required|integer|min:1|max:10',
-                'weight_percentage' => 'required|decimal:0,2|min:0|max:100',
-                'academic_year_id' => 'required|exists:academic_years,id',
+                'type' => 'required|in:continuous,semester,annual,test,exam,quiz,homework,participation',
+                'period' => 'nullable|string|max:50',
+                'coefficient' => 'required|numeric|min:1|max:10',
+                'weight_percentage' => 'nullable|numeric|min:0|max:100',
+                'academic_year_id' => 'nullable|exists:academic_years,id',
                 'subject_id' => 'required|exists:subjects,id',
-                'class_id' => 'required|exists:class_rooms,id',
-                'teacher_id' => 'required|exists:users,id',
-                'evaluation_date' => 'required|date|after_or_equal:today',
-                'maximum_score' => 'required|decimal:0,2|min:0|max:100',
-                'minimum_score' => 'required|decimal:0,2|min:0|lte:maximum_score',
+                'class_room_id' => 'required|exists:class_rooms,id',
+                'teacher_id' => 'nullable|exists:users,id',
+                'evaluation_date' => 'required|date',
+                'maximum_score' => 'required|numeric|min:0|max:100',
+                'minimum_score' => 'nullable|numeric|min:0|lte:maximum_score',
                 'grading_criteria' => 'nullable|array',
                 'comments' => 'nullable|string',
             ]);
 
+            // Cast coefficient to integer after validation
+            $data['coefficient'] = (int) $data['coefficient'];
+
+            // Get current user
+            $currentUser = $request->user();
+
+            // Defaults
+            if (!isset($data['teacher_id'])) $data['teacher_id'] = $currentUser->id;
+
+            // Security: Teacher cannot create for another teacher
+            if ($currentUser->hasRole('teacher') && $data['teacher_id'] != $currentUser->id) {
+                if (!$currentUser->can('manage-academic')) {
+                    abort(403, 'Vous ne pouvez créer une évaluation que pour vous-même.');
+                }
+            }
+
+            if (!isset($data['weight_percentage'])) $data['weight_percentage'] = 0;
+            if (!isset($data['minimum_score'])) $data['minimum_score'] = 0;
+            if (!isset($data['period'])) $data['period'] = 'P1';
+
             $evaluation = $this->evaluationService->createEvaluation($data);
 
-            return ApiResponse::success('Évaluation créée avec succès', $evaluation, 201);
+            return ApiResponse::success($evaluation, 'Évaluation créée avec succès', 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validation failed for evaluation creation', [
+                'errors' => $e->errors(),
+                'input' => $request->all()
+            ]);
+            return ApiResponse::error('Validation échouée: ' . implode(', ', array_map(fn($msgs) => implode(', ', $msgs), $e->errors())), 422);
         } catch (Exception $e) {
             Log::error('Failed to create evaluation', [
                 'data' => $request->all(),
@@ -89,49 +138,45 @@ class EvaluationController extends Controller
     /**
      * Display the specified evaluation.
      */
-    public function show(Evaluation $evaluation): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        try {
-            $evaluation->load(['subject', 'class', 'teacher', 'academicYear']);
+        $evaluation = Evaluation::with(['subject', 'class', 'teacher', 'academicYear'])->findOrFail($id);
+        $this->authorize('view', $evaluation);
 
-            return ApiResponse::success('Évaluation récupérée avec succès', $evaluation);
-        } catch (Exception $e) {
-            Log::error('Failed to get evaluation', [
-                'evaluation_id' => $evaluation->id,
-                'error' => $e->getMessage()
-            ]);
-            return ApiResponse::error('Erreur lors de la récupération de l\'évaluation', 500);
-        }
+        return ApiResponse::success($evaluation, 'Évaluation récupérée avec succès');
     }
 
     /**
      * Update the specified evaluation.
      */
-    public function update(Request $request, Evaluation $evaluation): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($id);
+        $this->authorize('update', $evaluation);
+
         try {
             $data = $request->validate([
-                'name' => 'sometimes|required|string|max:255',
+                'title' => 'sometimes|required|string|max:255',
                 'code' => 'nullable|string|max:50',
                 'description' => 'nullable|string',
-                'type' => 'sometimes|required|in:continuous,semester,annual',
-                'period' => 'sometimes|required|string|max:50',
-                'coefficient' => 'sometimes|required|integer|min:1|max:10',
-                'weight_percentage' => 'sometimes|required|decimal:0,2|min:0|max:100',
-                'academic_year_id' => 'sometimes|required|exists:academic_years,id',
+                'type' => 'sometimes|required|in:continuous,semester,annual,test,exam,quiz,homework,participation',
+                'period' => 'sometimes|nullable|string|max:50',
+                'coefficient' => 'sometimes|required|numeric|min:1|max:10',
+                'weight_percentage' => 'sometimes|nullable|decimal:0,2|min:0|max:100',
+                'academic_year_id' => 'sometimes|nullable|exists:academic_years,id',
                 'subject_id' => 'sometimes|required|exists:subjects,id',
-                'class_id' => 'sometimes|required|exists:class_rooms,id',
-                'teacher_id' => 'sometimes|required|exists:users,id',
-                'evaluation_date' => 'sometimes|required|date|after_or_equal:today',
+                'class_room_id' => 'sometimes|required|exists:class_rooms,id',
+                'teacher_id' => 'sometimes|nullable|exists:users,id',
+                'evaluation_date' => 'sometimes|required|date',
                 'maximum_score' => 'sometimes|required|decimal:0,2|min:0|max:100',
-                'minimum_score' => 'sometimes|required|decimal:0,2|min:0|lte:maximum_score',
+                'minimum_score' => 'sometimes|nullable|decimal:0,2|min:0|lte:maximum_score',
                 'grading_criteria' => 'nullable|array',
                 'comments' => 'nullable|string',
             ]);
 
             $updatedEvaluation = $this->evaluationService->updateEvaluation($evaluation, $data);
 
-            return ApiResponse::success('Évaluation mise à jour avec succès', $updatedEvaluation);
+            return ApiResponse::success($updatedEvaluation, 'Évaluation mise à jour avec succès');
         } catch (Exception $e) {
             Log::error('Failed to update evaluation', [
                 'evaluation_id' => $evaluation->id,
@@ -145,8 +190,11 @@ class EvaluationController extends Controller
     /**
      * Remove the specified evaluation.
      */
-    public function destroy(Evaluation $evaluation): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($id);
+        $this->authorize('delete', $evaluation);
+
         try {
             $deleted = $this->evaluationService->deleteEvaluation($evaluation);
 
@@ -169,9 +217,12 @@ class EvaluationController extends Controller
      */
     public function getEvaluationReport(int $evaluationId): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('view', $evaluation);
+
         try {
             $report = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                     ->getEvaluationReport($evaluationId);
+                ->getEvaluationReport($evaluationId);
 
             return ApiResponse::success($report, 'Rapport d\'évaluation récupéré avec succès');
         } catch (Exception $e) {
@@ -188,6 +239,9 @@ class EvaluationController extends Controller
      */
     public function generateResultPDF(int $evaluationId): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('view', $evaluation);
+
         try {
             // Return PDF generation URL or file path
             $filename = 'resultats_evaluation_' . $evaluationId . '_' . date('Y-m-d') . '.pdf';
@@ -210,6 +264,9 @@ class EvaluationController extends Controller
      */
     public function downloadResultPDF(int $evaluationId)
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('view', $evaluation);
+
         try {
             return $this->evaluationService->generateEvaluationResultPDF($evaluationId);
         } catch (Exception $e) {
@@ -226,9 +283,12 @@ class EvaluationController extends Controller
      */
     public function getByTeacher(Request $request, int $teacherId): JsonResponse
     {
+        $this->authorize('viewAny', Evaluation::class);
+        // Additional security check?
+
         try {
             $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                          ->getByTeacher($teacherId);
+                ->getByTeacher($teacherId);
 
             return ApiResponse::success('Évaluations de l\'enseignant récupérées avec succès', $evaluations);
         } catch (Exception $e) {
@@ -245,16 +305,18 @@ class EvaluationController extends Controller
      */
     public function getByClass(Request $request, int $classId): JsonResponse
     {
+        $this->authorize('viewAny', Evaluation::class);
+
         try {
             $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                          ->getByClass($classId);
+                ->getByClass($classId);
 
             $academicYearId = $request->get('academic_year_id');
             if ($academicYearId) {
                 $evaluations = $evaluations->where('academic_year_id', $academicYearId);
             }
 
-            return ApiResponse::success('Évaluations de la classe récupérées avec succès', $evaluations);
+            return ApiResponse::success($evaluations, 'Évaluations de la classe récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get class evaluations', [
                 'class_id' => $classId,
@@ -269,11 +331,13 @@ class EvaluationController extends Controller
      */
     public function getBySubject(Request $request, int $subjectId): JsonResponse
     {
+        $this->authorize('viewAny', Evaluation::class);
+
         try {
             $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                          ->getBySubject($subjectId);
+                ->getBySubject($subjectId);
 
-            return ApiResponse::success('Évaluations de la matière récupérées avec succès', $evaluations);
+            return ApiResponse::success($evaluations, 'Évaluations de la matière récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get subject evaluations', [
                 'subject_id' => $subjectId,
@@ -288,12 +352,14 @@ class EvaluationController extends Controller
      */
     public function getUpcoming(): JsonResponse
     {
+        $this->authorize('viewAny', Evaluation::class);
+
         try {
             $days = request('days', 7);
             $evaluations = app(\Modules\Grade\Repositories\EvaluationRepository::class)
-                          ->getUpcoming($days);
+                ->getUpcoming($days);
 
-            return ApiResponse::success('Évaluations à venir récupérées avec succès', $evaluations);
+            return ApiResponse::success($evaluations, 'Évaluations à venir récupérées avec succès');
         } catch (Exception $e) {
             Log::error('Failed to get upcoming evaluations', [
                 'error' => $e->getMessage()
@@ -307,10 +373,13 @@ class EvaluationController extends Controller
      */
     public function start(int $evaluationId): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('update', $evaluation);
+
         try {
             $evaluation = $this->evaluationService->startEvaluation($evaluationId);
 
-            return ApiResponse::success('Évaluation démarrée avec succès', $evaluation);
+            return ApiResponse::success($evaluation, 'Évaluation démarrée avec succès');
         } catch (Exception $e) {
             Log::error('Failed to start evaluation', [
                 'evaluation_id' => $evaluationId,
@@ -325,10 +394,13 @@ class EvaluationController extends Controller
      */
     public function complete(int $evaluationId): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('update', $evaluation);
+
         try {
             $evaluation = $this->evaluationService->completeEvaluation($evaluationId);
 
-            return ApiResponse::success('Évaluation terminée avec succès', $evaluation);
+            return ApiResponse::success($evaluation, 'Évaluation terminée avec succès');
         } catch (Exception $e) {
             Log::error('Failed to complete evaluation', [
                 'evaluation_id' => $evaluationId,
@@ -343,11 +415,13 @@ class EvaluationController extends Controller
      */
     public function cancel(int $evaluationId): JsonResponse
     {
+        $evaluation = Evaluation::findOrFail($evaluationId);
+        $this->authorize('update', $evaluation);
+
         try {
-            $evaluation = Evaluation::findOrFail($evaluationId);
             $evaluation->cancel();
 
-            return ApiResponse::success('Évaluation annulée avec succès', $evaluation);
+            return ApiResponse::success($evaluation, 'Évaluation annulée avec succès');
         } catch (Exception $e) {
             Log::error('Failed to cancel evaluation', [
                 'evaluation_id' => $evaluationId,
@@ -362,6 +436,8 @@ class EvaluationController extends Controller
      */
     public function bulkCreate(Request $request): JsonResponse
     {
+        $this->authorize('create', Evaluation::class);
+
         try {
             $data = $request->validate([
                 'evaluations' => 'required|array|min:1',
@@ -381,7 +457,7 @@ class EvaluationController extends Controller
 
             $evaluations = $this->evaluationService->bulkCreateEvaluations($data['evaluations']);
 
-            return ApiResponse::success('Évaluations créées en masse avec succès', $evaluations, 201);
+            return ApiResponse::success($evaluations, 'Évaluations créées en masse avec succès', 201);
         } catch (Exception $e) {
             Log::error('Failed to bulk create evaluations', [
                 'data' => $request->all(),

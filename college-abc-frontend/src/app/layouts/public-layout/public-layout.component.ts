@@ -113,10 +113,15 @@ import { filter } from 'rxjs/operators';
         </div>
       </div>
       
-      <div class="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400 text-sm">
-        &copy; {{ year }} Collège Privé Wend-Manegda. Tous droits réservés.
+      <div class="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-gray-400 text-sm">
+        <span>&copy; {{ year }} Collège Privé Wend-Manegda. Tous droits réservés.</span>
+        <a routerLink="/admin-login" class="mt-4 md:mt-0 flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors">
+          <i class="pi pi-lock"></i>
+          Administration
+        </a>
       </div>
     </footer>
+
   `
 })
 export class PublicLayoutComponent implements OnInit {

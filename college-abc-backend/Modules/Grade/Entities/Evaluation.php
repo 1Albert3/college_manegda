@@ -4,19 +4,31 @@ namespace Modules\Grade\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 use Carbon\Carbon;
 
 class Evaluation extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable;
 
     protected $fillable = [
-        'name', 'code', 'description', 'type', 'period', 'coefficient',
-        'weight_percentage', 'academic_year_id', 'subject_id', 'class_id',
-        'teacher_id', 'evaluation_date', 'status', 'maximum_score', 'minimum_score',
-        'grading_criteria', 'comments'
+        'title',
+        'code',
+        'description',
+        'type',
+        'period',
+        'coefficient',
+        'weight_percentage',
+        'academic_year_id',
+        'subject_id',
+        'class_room_id',
+        'teacher_id',
+        'evaluation_date',
+        'status',
+        'maximum_score',
+        'minimum_score',
+        'grading_criteria',
+        'comments'
     ];
 
     protected $casts = [
@@ -29,7 +41,7 @@ class Evaluation extends Model
         'updated_at' => 'datetime',
     ];
 
-    protected $searchable = ['name', 'code', 'description'];
+    protected $searchable = ['title', 'code', 'description'];
 
     // Relations
     public function academicYear()
@@ -44,7 +56,7 @@ class Evaluation extends Model
 
     public function class()
     {
-        return $this->belongsTo(\Modules\Academic\Entities\ClassRoom::class, 'class_id');
+        return $this->belongsTo(\Modules\Academic\Entities\ClassRoom::class, 'class_room_id');
     }
 
     public function teacher()
@@ -81,6 +93,16 @@ class Evaluation extends Model
     public function scopeCurrentYear($query)
     {
         return $query->whereHas('academicYear', fn($q) => $q->current());
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeOngoing($query)
+    {
+        return $query->where('status', 'ongoing');
     }
 
     // Accessors & Methods

@@ -1,0 +1,250 @@
+'<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <div class="mb-8" data-aos="fade-down">
+    <h2 class="text-3xl font-bold text-gray-800 font-serif">Saisie des Notes</h2>
+    <p class="text-gray-500 mt-2">Enregistrez les résultats des évaluations par classe.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Configuration Panel -->
+    <div class="bg-white rounded-xl shadow-lg p-6 h-fit" data-aos="fade-right">
+      <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-4">Configuration</h3>
+
+      <form [formGroup]="gradeForm">
+        <!-- Class -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Classe</label>
+          <select
+            formControlName="class_id"
+            (change)="onClassChange()"
+            class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+          >
+            <option value="">Sélectionner une classe</option>
+            <option *ngFor="let cls of classes" [value]="cls.id">{{ cls.name }}</option>
+          </select>
+        </div>
+
+        <!-- Subject -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Matière</label>
+          <select
+            formControlName="subject_id"
+            (change)="onSubjectChange()"
+            class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+          >
+            <option value="">Sélectionner une matière</option>
+            <option *ngFor="let s of subjects" [value]="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+
+        <div class="my-6 border-t border-gray-100"></div>
+
+        <!-- Eval Toggle -->
+        <div class="flex items-center gap-4 mb-4">
+          <button
+            type="button"
+            (click)="gradeForm.patchValue({ new_evaluation: true })"
+            [class]="
+              gradeForm.get('new_evaluation')?.value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-600 border-gray-200'
+            "
+            class="flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors"
+          >
+            Nouvelle
+          </button>
+          <button
+            type="button"
+            (click)="gradeForm.patchValue({ new_evaluation: false })"
+            [class]="
+              !gradeForm.get('new_evaluation')?.value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-600 border-gray-200'
+            "
+            class="flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors"
+          >
+            Existante
+          </button>
+        </div>
+
+        <!-- Existing Eval Select -->
+        <div *ngIf="!gradeForm.get('new_evaluation')?.value" class="mb-4" data-aos="fade-in">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Évaluation existante</label>
+          <select
+            formControlName="evaluation_id"
+            class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+          >
+            <option value="">Choisir...</option>
+            <option *ngFor="let eval of evaluations" [value]="eval.id">
+              {{ eval.title }} ({{ eval.date }})
+            </option>
+          </select>
+        </div>
+
+        <!-- New Eval Details -->
+        <div *ngIf="gradeForm.get('new_evaluation')?.value" class="space-y-4" data-aos="fade-in">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+            <input
+              type="text"
+              formControlName="title"
+              placeholder="Ex: Devoir #1"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select
+                formControlName="type"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+              >
+                <option value="test">Devoir</option>
+                <option value="exam">Examen</option>
+                <option value="quiz">Interro</option>
+                <option value="homework">DM</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <input
+                type="date"
+                formControlName="date"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Note Max</label>
+              <input
+                type="number"
+                formControlName="max_score"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Coeff.</label>
+              <input
+                type="number"
+                formControlName="coefficient"
+                step="0.5"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Student List & Grades -->
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 min-h-[500px]" data-aos="fade-left">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800">Liste des Élèves</h3>
+        <span
+          *ngIf="students.length"
+          class="bg-blue-100 text-blue-700 py-1 px-3 rounded-full text-sm font-medium"
+        >
+          {{ students.length }} élèves
+        </span>
+      </div>
+
+      <div *ngIf="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+
+      <div *ngIf="!loading && students.length === 0" class="text-center py-12 text-gray-400">
+        <i class="pi pi-users text-4xl mb-3 block"></i>
+        Sélectionnez une classe pour afficher les élèves.
+      </div>
+
+      <div *ngIf="!loading && students.length > 0">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr
+                class="bg-gray-50 border-b border-gray-100 text-gray-500 text-sm uppercase tracking-wider"
+              >
+                <th class="p-4 font-semibold rounded-tl-lg">Matricule</th>
+                <th class="p-4 font-semibold">Nom & Prénom</th>
+                <th class="p-4 font-semibold w-24">Note</th>
+                <th class="p-4 font-semibold rounded-tr-lg">Commentaire</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr
+                *ngFor="let student of students; let i = index"
+                class="hover:bg-gray-50 transition-colors"
+              >
+                <td class="p-4 text-gray-500 text-sm">{{ student.matricule }}</td>
+                <td class="p-4 font-medium text-gray-800">
+                  {{ student.firstName }} {{ student.lastName }}
+                </td>
+                <td class="p-4">
+                  <input
+                    type="number"
+                    [(ngModel)]="student.tempScore"
+                    (ngModelChange)="validateGrade(student)"
+                    [ngModelOptions]="{ standalone: true }"
+                    [max]="gradeForm.get('max_score')?.value"
+                    min="0"
+                    class="w-20 px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-center font-bold text-gray-800"
+                    [class.bg-red-50]="student.tempScore !== null && student.tempScore < 10"
+                    [class.text-red-600]="student.tempScore !== null && student.tempScore < 10"
+                  />
+                </td>
+                <td class="p-4">
+                  <input
+                    type="text"
+                    [(ngModel)]="student.tempComment"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Appréciation..."
+                    list="commentsList"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-sm"
+                  />
+                  <datalist id="commentsList">
+                    <option value="Excellent travail"></option>
+                    <option value="Très bien"></option>
+                    <option value="Bien"></option>
+                    <option value="Assez bien"></option>
+                    <option value="Passable"></option>
+                    <option value="Insuffisant"></option>
+                    <option value="Travail non sérieux"></option>
+                    <option value="Attention aux bavardages"></option>
+                    <option value="Absent(e)"></option>
+                    <option value="Non rendu"></option>
+                  </datalist>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          *ngIf="successMessage"
+          class="mt-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center animate-pulse"
+        >
+          <i class="pi pi-check-circle mr-2"></i> {{ successMessage }}
+        </div>
+        <div
+          *ngIf="errorMessage"
+          class="mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center"
+        >
+          <i class="pi pi-exclamation-circle mr-2"></i> {{ errorMessage }}
+        </div>
+
+        <div class="mt-8 flex justify-end">
+          <button
+            (click)="onSubmit()"
+            [disabled]="loading"
+            class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 px-8 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <i class="pi pi-save"></i>
+            Enregistrer les notes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

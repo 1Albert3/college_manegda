@@ -112,26 +112,48 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'director' => [
                 // User management
-                'view-users', 'create-users', 'update-users', 'activate-users', 'deactivate-users',
+                'view-users',
+                'create-users',
+                'update-users',
+                'activate-users',
+                'deactivate-users',
                 // Role management (limited)
-                'view-roles', 'assign-roles',
+                'view-roles',
+                'assign-roles',
                 // Academic oversight
-                'view-academic', 'manage-academic',
+                'view-academic',
+                'manage-academic',
                 // All student/teacher management
-                'view-students', 'create-students', 'update-students', 'delete-students',
-                'view-teachers', 'create-teachers', 'update-teachers', 'delete-teachers',
+                'view-students',
+                'create-students',
+                'update-students',
+                'delete-students',
+                'view-teachers',
+                'create-teachers',
+                'update-teachers',
+                'delete-teachers',
                 // Grades, attendance, finance oversight
-                'view-grades', 'manage-grades',
-                'view-attendance', 'manage-attendance',
-                'view-finance', 'manage-payments',
+                'view-grades',
+                'manage-grades',
+                'view-attendance',
+                'manage-attendance',
+                'view-finance',
+                'manage-payments',
                 // Communications
-                'send-sms', 'send-emails', 'view-communications',
+                'send-sms',
+                'send-emails',
+                'view-communications',
                 // Reports
-                'view-reports', 'generate-reports', 'export-reports',
+                'view-reports',
+                'generate-reports',
+                'export-reports',
                 // Services
-                'manage-canteen', 'manage-transport', 'manage-health',
+                'manage-canteen',
+                'manage-transport',
+                'manage-health',
                 // Documents
-                'view-documents', 'manage-documents',
+                'view-documents',
+                'manage-documents',
                 // Activity logs
                 'view-activity-logs',
             ],
@@ -140,25 +162,32 @@ class RolesAndPermissionsSeeder extends Seeder
                 // Limited user view
                 'view-users',
                 // Student management (read/update)
-                'view-students', 'update-students',
+                'view-students',
+                'update-students',
                 // Academic management
-                'view-academic', 'manage-academic',
+                'view-academic',
+                'manage-academic',
                 // Grades and attendance
-                'view-grades', 'enter-grades',
-                'view-attendance', 'mark-attendance',
+                'view-grades',
+                'enter-grades',
+                'view-attendance',
+                'mark-attendance',
                 // Communications
-                'send-sms', 'send-emails',
+                'send-sms',
+                'send-emails',
                 // Basic reports
                 'view-reports',
                 // E-learning
-                'manage-courses', 'manage-assignments', 'manage-quizzes',
+                'manage-courses',
+                'manage-assignments',
+                'manage-quizzes',
                 // Documents
                 'view-documents',
             ],
 
             'parent' => [
-                // Can view own child's data
-                'view-students', // Limited to own children via relationships
+                // Can view own child's data (handled by Policy)
+                // 'view-students' REMOVED to prevent global access
                 'view-grades', // Limited to own children
                 'view-attendance', // Limited to own children
                 'view-finance', // Limited to own payments
@@ -190,8 +219,10 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
-        $this->command->info('Roles and permissions seeded successfully');
-        $this->command->info('Created ' . count($permissions) . ' permissions');
-        $this->command->info('Created ' . count($rolePermissions) . ' roles');
+        if ($this->command) {
+            $this->command->info('Roles and permissions seeded successfully');
+            $this->command->info('Created ' . count($permissions) . ' permissions');
+            $this->command->info('Created ' . count($rolePermissions) . ' roles');
+        }
     }
 }

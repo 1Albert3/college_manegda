@@ -4,14 +4,13 @@ namespace Modules\Attendance\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 use Modules\Student\Entities\Student;
 use Modules\Core\Entities\User;
 
 class Attendance extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable;
 
     protected $fillable = [
         'student_id',

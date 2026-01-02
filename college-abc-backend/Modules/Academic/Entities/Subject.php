@@ -4,12 +4,11 @@ namespace Modules\Academic\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 
 class Subject extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable;
 
     protected $fillable = [
         'name', 'code', 'category', 'description',

@@ -4,5 +4,6 @@
     "Academic": true,
     "Grade": true,
     "Attendance": true,
-    "Communication": true
+    "Communication": true,
+    "Finance": true
 }

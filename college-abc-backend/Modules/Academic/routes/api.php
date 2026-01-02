@@ -4,6 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Modules\Academic\Http\Controllers\Api\AcademicYearController;
 use Modules\Academic\Http\Controllers\Api\SubjectController;
 use Modules\Academic\Http\Controllers\Api\ClassRoomController;
+use Modules\Academic\Http\Controllers\Api\CycleController;
+use Modules\Academic\Http\Controllers\Api\LevelController;
+use Modules\Academic\Http\Controllers\Api\SemesterController;
+use Modules\Academic\Http\Controllers\Api\ScheduleController;
 
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 
@@ -82,6 +86,75 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('name/{name}')->group(function () {
             Route::get('/', [ClassRoomController::class, 'findByName']);
+        });
+    });
+
+    // Cycles
+    Route::prefix('cycles')->group(function () {
+        Route::get('/', [CycleController::class, 'index']);
+        Route::post('/', [CycleController::class, 'store']);
+        Route::post('/reorder', [CycleController::class, 'reorder']);
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('/', [CycleController::class, 'show']);
+            Route::put('/', [CycleController::class, 'update']);
+            Route::delete('/', [CycleController::class, 'destroy']);
+            Route::post('/activate', [CycleController::class, 'activate']);
+            Route::post('/deactivate', [CycleController::class, 'deactivate']);
+            Route::get('/statistics', [CycleController::class, 'statistics']);
+        });
+    });
+
+    // Levels (Niveaux)
+    Route::prefix('levels')->group(function () {
+        Route::get('/', [LevelController::class, 'index']);
+        Route::post('/', [LevelController::class, 'store']);
+        Route::get('/search', [LevelController::class, 'search']);
+        Route::post('/reorder', [LevelController::class, 'reorder']);
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('/', [LevelController::class, 'show']);
+            Route::put('/', [LevelController::class, 'update']);
+            Route::delete('/', [LevelController::class, 'destroy']);
+            Route::post('/activate', [LevelController::class, 'activate']);
+            Route::post('/deactivate', [LevelController::class, 'deactivate']);
+            Route::get('/statistics', [LevelController::class, 'statistics']);
+        });
+    });
+
+    // Semesters (Trimestres/Semestres)
+    Route::prefix('semesters')->group(function () {
+        Route::get('/', [SemesterController::class, 'index']);
+        Route::post('/', [SemesterController::class, 'store']);
+        Route::get('/current', [SemesterController::class, 'current']);
+        Route::get('/ongoing', [SemesterController::class, 'ongoing']);
+        Route::post('/generate', [SemesterController::class, 'generate']);
+        Route::get('/by-year/{academicYearId}', [SemesterController::class, 'byYear']);
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('/', [SemesterController::class, 'show']);
+            Route::put('/', [SemesterController::class, 'update']);
+            Route::delete('/', [SemesterController::class, 'destroy']);
+            Route::post('/set-current', [SemesterController::class, 'setCurrent']);
+        });
+    });
+
+    // Schedules (Emplois du temps)
+    Route::prefix('schedules')->group(function () {
+        Route::get('/', [ScheduleController::class, 'index']);
+        Route::post('/', [ScheduleController::class, 'store']);
+        Route::post('/bulk-create', [ScheduleController::class, 'bulkCreate']);
+        Route::post('/copy-to-new-year', [ScheduleController::class, 'copyToNewYear']);
+        Route::get('/statistics', [ScheduleController::class, 'statistics']);
+        Route::get('/class/{classRoomId}', [ScheduleController::class, 'classSchedule']);
+        Route::get('/teacher/{teacherId}', [ScheduleController::class, 'teacherSchedule']);
+        Route::get('/today/class/{classRoomId}', [ScheduleController::class, 'todayClass']);
+        Route::get('/today/teacher/{teacherId}', [ScheduleController::class, 'todayTeacher']);
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('/', [ScheduleController::class, 'show']);
+            Route::put('/', [ScheduleController::class, 'update']);
+            Route::delete('/', [ScheduleController::class, 'destroy']);
         });
     });
 });

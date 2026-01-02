@@ -21,4 +21,10 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 
     // Other protected resources
     Route::apiResource('cores', CoreController::class)->names('core');
+
+    // Documents
+    Route::get('documents', [\Modules\Core\Http\Controllers\DocumentController::class, 'index']);
+    Route::post('documents', [\Modules\Core\Http\Controllers\DocumentController::class, 'store']);
+    Route::get('documents/{id}/download', [\Modules\Core\Http\Controllers\DocumentController::class, 'download']);
+    Route::delete('documents/{id}', [\Modules\Core\Http\Controllers\DocumentController::class, 'destroy']);
 });

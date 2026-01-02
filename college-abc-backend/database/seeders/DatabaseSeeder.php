@@ -26,8 +26,18 @@ class DatabaseSeeder extends Seeder
         $this->createSuperAdmin();
 
         // 3. Seeder Academic (matières, classes, années scolaires)
+        // $this->call([
+        //     \Modules\Academic\Database\Seeders\AcademicSeeder::class,
+        // ]);
+
+        // 4. Seeder Structure Ecole (Cycles, Niveaux, Classes)
         $this->call([
-            \Modules\Academic\Database\Seeders\AcademicSeeder::class,
+            \Database\Seeders\SchoolStructureSeeder::class,
+        ]);
+
+        // 5. Seeder Utilisateurs de test
+        $this->call([
+            \Database\Seeders\UserSeeder::class,
         ]);
 
         $this->command->info('✅ Database seeded successfully!');
@@ -49,10 +59,11 @@ class DatabaseSeeder extends Seeder
         // Créer l'admin avec un insert direct (évite les traits UUID)
         $adminId = DB::table('users')->insertGetId([
             'id' => Str::uuid(),
-            'name' => 'Super Administrateur',
+            'first_name' => 'Super',
+            'last_name' => 'Administrateur',
             'email' => 'admin@college-abc.com',
             'password' => Hash::make('password123'),
-            'role_type' => 'super_admin',
+            'role' => 'super_admin',
             'phone' => '+22670000000',
             'is_active' => true,
             'email_verified_at' => now(),

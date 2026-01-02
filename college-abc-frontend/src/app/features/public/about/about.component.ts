@@ -29,9 +29,9 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
           <div class="relative pl-12 md:pl-0" data-aos="fade-up">
             <div class="absolute -left-[14px] md:left-1/2 md:-ml-[14px] w-6 h-6 bg-secondary rounded-full border-4 border-white shadow-lg z-10"></div>
             <div class="md:w-1/2 md:pr-12 md:text-right md:ml-auto md:mr-auto md:absolute md:left-0 md:top-0">
-               <span class="text-secondary font-bold text-xl">1999</span>
+               <span class="text-secondary font-bold text-xl">2000</span>
                <h3 class="text-2xl font-bold text-gray-800 mb-2">Fondation du Collège</h3>
-               <p class="text-gray-600">Ouverture des premières classes de 6ème avec 50 élèves.</p>
+               <p class="text-gray-600">Ouverture des premières classes.</p>
             </div>
           </div>
           <!-- Événement 2 -->
@@ -83,7 +83,7 @@ import { HeroSliderComponent } from '../../../shared/components/hero-slider/hero
             <p class="text-gray-600 leading-relaxed mb-4">
               Notre établissement se distingue par un encadrement personnalisé et une exigence bienveillante. Nous croyons que chaque élève a un talent unique qu'il nous appartient de faire fructifier.
             </p>
-            <div class="font-bold text-primary text-lg">M. Jean KABORE</div>
+            <div class="font-bold text-primary text-lg">Mr. KABORE</div>
             <div class="text-sm text-gray-500">Directeur Général</div>
           </div>
         </div>

@@ -48,7 +48,7 @@ class EvaluationRepository
 
     public function getByClass(int $classId): Collection
     {
-        return $this->model->where('class_id', $classId)->get();
+        return $this->model->where('class_room_id', $classId)->get();
     }
 
     public function getBySubject(int $subjectId): Collection
@@ -107,17 +107,19 @@ class EvaluationRepository
     // Statistics methods
     public function getCompletionStats(int $academicYearId = null): array
     {
-        $query = $this->model;
+        $query = $this->model->newQuery();
 
         if ($academicYearId) {
             $query->where('academic_year_id', $academicYearId);
         }
 
-        $total = $query->count();
-        $completed = $query->completed()->count();
-        $ongoing = $query->ongoing()->count();
-        $planned = $query->where('status', 'planned')->count();
-        $cancelled = $query->where('status', 'cancelled')->count();
+        $total = $query->clone()->count();
+        $completed = $query->clone()->completed()->count();
+        $ongoing = $query->clone()->ongoing()->count();
+        $planned = $query->clone()->where('status', 'planned')->count();
+        $cancelled = $query->clone()->where('status', 'cancelled')->count();
+
+        $completionPercentage = $total > 0 ? round(($completed / $total) * 100, 1) : 0;
 
         return [
             'total' => $total,
@@ -125,7 +127,7 @@ class EvaluationRepository
             'ongoing' => $ongoing,
             'planned' => $planned,
             'cancelled' => $cancelled,
-            'completion_percentage' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
+            'completion_percentage' => $completionPercentage,
         ];
     }
 
@@ -168,7 +170,7 @@ class EvaluationRepository
                 return $evaluation->class->enrollments()->active()->count();
             }),
             'subjects_count' => $evaluations->pluck('subject_id')->unique()->count(),
-            'classes_count' => $evaluations->pluck('class_id')->unique()->count(),
+            'classes_count' => $evaluations->pluck('class_room_id')->unique()->count(),
         ];
     }
 
@@ -228,8 +230,8 @@ class EvaluationRepository
         $query = $this->model->with(['subject', 'class', 'teacher', 'academicYear']);
 
         // Apply filters
-        if (isset($filters['name'])) {
-            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        if (isset($filters['title'])) {
+            $query->where('title', 'like', '%' . $filters['title'] . '%');
         }
 
         if (isset($filters['code'])) {
@@ -257,7 +259,7 @@ class EvaluationRepository
         }
 
         if (isset($filters['class_id'])) {
-            $query->where('class_id', $filters['class_id']);
+            $query->where('class_room_id', $filters['class_id']);
         }
 
         if (isset($filters['teacher_id'])) {
@@ -313,8 +315,33 @@ class EvaluationRepository
             'minimum_score' => $presentGrades->min('score'),
             'maximum_score' => $presentGrades->max('score'),
             'passing_rate' => $presentGrades->where('weighted_score', '>=', 10)->count() / max($presentGrades->count(), 1) * 100,
-            'grade_distribution' => $evaluation->getGradeDistribution(),
+            'grade_distribution' => $this->getGradeDistribution($evaluation->id),
             'completion_percentage' => $evaluation->completion_percentage,
         ];
+    }
+
+    public function getGradeDistribution(int $evaluationId): array
+    {
+        $grades = \Modules\Grade\Entities\Grade::where('evaluation_id', $evaluationId)->get();
+
+        $distribution = [
+            'A+' => 0,
+            'A' => 0,
+            'B+' => 0,
+            'B' => 0,
+            'C+' => 0,
+            'C' => 0,
+            'D+' => 0,
+            'D' => 0,
+            'F' => 0
+        ];
+
+        foreach ($grades as $grade) {
+            if (!$grade->is_absent && $grade->grade_letter && isset($distribution[$grade->grade_letter])) {
+                $distribution[$grade->grade_letter]++;
+            }
+        }
+
+        return $distribution;
     }
 }

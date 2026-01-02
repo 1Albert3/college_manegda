@@ -10,7 +10,7 @@ class Enrollment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'student_id', 'academic_year_id', 'class_id',
+        'student_id', 'academic_year_id', 'class_room_id',
         'enrollment_date', 'status', 'discount_percentage', 'notes'
     ];
 
@@ -25,15 +25,15 @@ class Enrollment extends Model
         return $this->belongsTo(Student::class);
     }
 
-    // public function academicYear()
-    // {
-    //     return $this->belongsTo(\Modules\Academic\Entities\AcademicYear::class);
-    // }
+    public function academicYear()
+    {
+        return $this->belongsTo(\Modules\Academic\Entities\AcademicYear::class);
+    }
 
-    // public function class()
-    // {
-    //     return $this->belongsTo(\Modules\Academic\Entities\ClassRoom::class, 'class_id');
-    // }
+    public function classRoom()
+    {
+        return $this->belongsTo(\Modules\Academic\Entities\ClassRoom::class, 'class_room_id');
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -48,6 +48,6 @@ class Enrollment extends Model
 
     public function scopeByClass($query, $classId)
     {
-        return $query->where('class_id', $classId);
+        return $query->where('class_room_id', $classId);
     }
 }

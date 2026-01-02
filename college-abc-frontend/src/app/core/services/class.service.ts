@@ -1,39 +1,95 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface ClassRoom {
-    id: string;
-    name: string;
-    level: string;
-    stream?: string;
-    capacity?: number;
+  id: string; // Updated to string for UUID support
+  name: string;
+  level: string; // 'CP', '2nde', etc.
+  capacity: number;
+  // Lycee specific
+  serie?: string;
+  // MP specific
+  cycle?: string;
 }
 
+export type SchoolCycle = 'mp' | 'college' | 'lycee';
+
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class ClassService {
-    private apiUrl = 'api/academic/classes'; // URL à configurer
+  private apiUrl = environment.apiUrl;
 
-    constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-    getClasses(): Observable<ClassRoom[]> {
-        // TODO: Remplacer par un vrai appel HTTP quand le backend sera connecté
-        // return this.http.get<ClassRoom[]>(this.apiUrl);
+  /**
+   * Récupérer les classes d'un cycle donné
+   * @param cycle 'mp' | 'lycee' | 'college'
+   * @param params Filtres optionnels (niveau, année, etc.)
+   */
+  getClasses(cycle: SchoolCycle = 'mp', params?: any): Observable<any> {
+    // Construction de l'URL spécifique au cycle
+    // ex: /v1/mp/classes ou /v1/lycee/classes
+    const endpoint = `${this.apiUrl}/${cycle}/classes`;
+    
+    return this.http.get(endpoint, { params });
+  }
 
-        // Mock data pour le développement frontend
-        return of([
-            { id: '1', name: '6ème', level: '6eme', capacity: 30 },
-            { id: '2', name: '5ème', level: '5eme', capacity: 30 },
-            { id: '3', name: '4ème', level: '4eme', capacity: 30 },
-            { id: '4', name: '3ème', level: '3eme', capacity: 30 },
-            { id: '5', name: '2nde A', level: '2nde', stream: 'A', capacity: 35 },
-            { id: '6', name: '2nde C', level: '2nde', stream: 'C', capacity: 35 },
-            { id: '7', name: '1ère A', level: '1ere', stream: 'A', capacity: 35 },
-            { id: '8', name: '1ère D', level: '1ere', stream: 'D', capacity: 35 },
-            { id: '9', name: 'Tle A', level: 'Tle', stream: 'A', capacity: 35 },
-            { id: '10', name: 'Tle D', level: 'Tle', stream: 'D', capacity: 35 },
-        ]);
-    }
+  // Helpers pratiques
+
+  getClassesMP(params?: any): Observable<any> {
+    return this.getClasses('mp', params);
+  }
+
+  getClassesLycee(params?: any): Observable<any> {
+    return this.getClasses('lycee', params);
+  }
+
+  getClassesCollege(params?: any): Observable<any> {
+    return this.getClasses('college', params);
+  }
+
+  /**
+   * Créer une nouvelle classe
+   */
+  createClass(cycle: SchoolCycle, data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${cycle}/classes`, data);
+  }
+
+  /**
+   * Mettre à jour une classe
+   */
+  updateClass(cycle: SchoolCycle, id: string, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${cycle}/classes/${id}`, data);
+  }
+
+  /**
+   * Supprimer une classe
+   */
+  deleteClass(cycle: SchoolCycle, id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${cycle}/classes/${id}`);
+  }
+
+  getStudentsByClass(cycle: SchoolCycle, classId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${cycle}/classes/${classId}/students`);
+  }
+
+  // --- ASSIGNATION LYCÉE ---
+  getAssignmentsLycee(classId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/lycee/classes/${classId}/assignments`);
+  }
+
+  assignTeacherLycee(classId: string, data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/lycee/classes/${classId}/assignments`, data);
+  }
+
+  removeAssignmentLycee(classId: string, assignmentId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/lycee/classes/${classId}/assignments/${assignmentId}`);
+  }
+
+  getAvailableResourcesLycee(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/lycee/resources/available`);
+  }
 }

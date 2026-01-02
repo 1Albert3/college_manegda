@@ -87,7 +87,7 @@ class GradeService
         }
     }
 
-    public function recordGrade(array $data, int $userId): Grade
+    public function recordGrade(array $data, $userId): Grade
     {
         DB::beginTransaction();
         try {
@@ -109,7 +109,7 @@ class GradeService
         }
     }
 
-    public function bulkRecordGrades(array $gradesData, int $userId): Collection
+    public function bulkRecordGrades(array $gradesData, $userId): Collection
     {
         DB::beginTransaction();
         try {
@@ -175,6 +175,7 @@ class GradeService
 
         $grades = $this->gradeRepository->getByStudent($studentId);
 
+        // Filter by academic year
         if ($academicYearId) {
             $grades = $grades->filter(function ($grade) use ($academicYearId) {
                 return $grade->evaluation->academic_year_id === $academicYearId;
@@ -190,30 +191,62 @@ class GradeService
             'total_grades' => $grades->count(),
             'present_grades' => $grades->where('is_absent', false)->count(),
             'absent_grades' => $grades->where('is_absent', true)->count(),
-            'average_score' => $grades->where('is_absent', false)->avg('weighted_score') ?? 0,
+            'average_score' => 0, // Will be calculated
             'passing_rate' => 0,
         ];
 
+        // Global average vars
+        $totalWeightedSum = 0;
+        $totalCoefficients = 0;
+
         foreach ($gradesBySubject as $subjectName => $subjectGrades) {
             $presentGrades = $subjectGrades->where('is_absent', false);
+
+            // Calculate Subject Average
+            $subjectSum = 0;
+            $subjectCoefSum = 0;
+
+            foreach ($presentGrades as $g) {
+                $coef = $g->evaluation->coefficient ?? 1;
+                $subjectSum += ($g->score * $coef);
+                $subjectCoefSum += $coef;
+            }
+
+            $subjectAvg = $subjectCoefSum > 0 ? ($subjectSum / $subjectCoefSum) : 0;
+            $subjectSubjectCoef = $subjectGrades->first()->evaluation->subject->coefficient ?? 1;
+
+            // Add to global stats (simple average of all grades logic OR subject-weighted logic?)
+            // Usually simpler stats just show average of all grades, but let's try to be consistent.
+            // For simple "Grades Report", we often just dump the list.
+            // Let's keep it simple: Average = Avg of all scores provided in the list (weighted by eval coef).
+
+            // Note: This 'overall_stats.average_score' usually refers to raw grade average. 
+            // Real academic average is in ReportCardService.
 
             $subjectReports[$subjectName] = [
                 'subject' => $subjectName,
                 'grades_count' => $subjectGrades->count(),
                 'present_grades' => $presentGrades->count(),
                 'absent_grades' => $subjectGrades->where('is_absent', true)->count(),
-                'average' => $presentGrades->avg('weighted_score') ?? 0,
-                'minimum' => $presentGrades->min('weighted_score'),
-                'maximum' => $presentGrades->max('weighted_score'),
-                'passing_grades' => $presentGrades->where('weighted_score', '>=', 10)->count(),
-                'coefficient' => $subjectGrades->first()->evaluation->coefficient,
+                'average' => round($subjectAvg, 2),
+                'minimum' => $presentGrades->min('score'), // Use raw score
+                'maximum' => $presentGrades->max('score'), // Use raw score
+                'passing_grades' => $presentGrades->where('score', '>=', 10)->count(), // Raw score comparison
+                'coefficient' => $subjectSubjectCoef,
             ];
+
+            $totalWeightedSum += ($subjectAvg * $subjectSubjectCoef);
+            $totalCoefficients += $subjectSubjectCoef;
         }
+
+        // Use ReportCard style calculation for global average
+        $overallStats['average_score'] = $totalCoefficients > 0 ? round($totalWeightedSum / $totalCoefficients, 2) : 0;
 
         $totalPresentGrades = $grades->where('is_absent', false);
         if ($totalPresentGrades->count() > 0) {
+            // Passing rate based on raw scores >= 10
             $overallStats['passing_rate'] = round(
-                ($totalPresentGrades->where('weighted_score', '>=', 10)->count() / $totalPresentGrades->count()) * 100,
+                ($totalPresentGrades->where('score', '>=', 10)->count() / $totalPresentGrades->count()) * 100,
                 1
             );
         }
@@ -223,7 +256,7 @@ class GradeService
             'academic_year' => $academicYearId ? AcademicYear::find($academicYearId) : null,
             'overall_stats' => $overallStats,
             'subjects' => $subjectReports,
-            'grades' => $grades,
+            'grades' => $grades->values(),
         ];
     }
 
@@ -260,17 +293,28 @@ class GradeService
         });
 
         foreach ($subjectsGrouped as $subjectName => $subjectEvaluations) {
+            // Find grades for these evaluations
             $subjectGrades = $grades->filter(function ($grade) use ($subjectEvaluations) {
                 return $subjectEvaluations->pluck('id')->contains($grade->evaluation_id);
             })->where('is_absent', false);
 
             if ($subjectGrades->count() > 0) {
+                // Calculate average using weighted method
+                $sumScores = 0;
+                $sumCoefs = 0;
+                foreach ($subjectGrades as $g) {
+                    $c = $g->evaluation->coefficient ?? 1;
+                    $sumScores += ($g->score * $c);
+                    $sumCoefs += $c;
+                }
+                $avg = $sumCoefs > 0 ? ($sumScores / $sumCoefs) : 0;
+
                 $subjectsStats[$subjectName] = [
                     'subject' => $subjectName,
                     'evaluations_count' => $subjectEvaluations->count(),
                     'grades_count' => $subjectGrades->count(),
-                    'average' => $subjectGrades->avg('weighted_score'),
-                    'passing_rate' => round(($subjectGrades->where('weighted_score', '>=', 10)->count() / $subjectGrades->count()) * 100, 1),
+                    'average' => round($avg, 2),
+                    'passing_rate' => round(($subjectGrades->where('score', '>=', 10)->count() / $subjectGrades->count()) * 100, 1),
                 ];
             }
         }
@@ -312,15 +356,16 @@ class GradeService
             $grades = $this->gradeRepository->getByEvaluation($evaluation->id);
             $presentGrades = $grades->where('is_absent', false);
 
+            $avg = $presentGrades->avg('score'); // Simple average for single evaluation is fine as coef is constant
+
             $evaluationsReport[] = [
                 'evaluation' => $evaluation,
                 'total_grades' => $grades->count(),
                 'present_grades' => $presentGrades->count(),
                 'absent_grades' => $grades->where('is_absent', true)->count(),
-                'average_score' => $presentGrades->avg('score'),
-                'average_weighted_score' => $presentGrades->avg('weighted_score'),
+                'average_score' => $avg ? round($avg, 2) : 0,
                 'passing_rate' => $presentGrades->count() > 0
-                    ? round(($presentGrades->where('weighted_score', '>=', 10)->count() / $presentGrades->count()) * 100, 1)
+                    ? round(($presentGrades->where('score', '>=', 10)->count() / $presentGrades->count()) * 100, 1)
                     : 0,
             ];
         }
@@ -380,7 +425,7 @@ class GradeService
         }
     }
 
-    protected function canRecordGrade(int $evaluationId, int $studentId, int $userId): bool
+    protected function canRecordGrade(int $evaluationId, int $studentId, $userId): bool
     {
         return $this->gradeRepository->canRecordGrade($evaluationId, $studentId, $userId);
     }

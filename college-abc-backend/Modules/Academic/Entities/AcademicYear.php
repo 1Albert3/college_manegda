@@ -4,17 +4,22 @@ namespace Modules\Academic\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Searchable;
 use Carbon\Carbon;
 
 class AcademicYear extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $fillable = [
-        'name', 'start_date', 'end_date', 'status',
-        'is_current', 'description', 'semesters'
+        'name',
+        'start_date',
+        'end_date',
+        'status',
+        'is_current',
+        'description',
+        'semesters'
     ];
 
     protected $casts = [
@@ -24,6 +29,7 @@ class AcademicYear extends Model
         'semesters' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $searchable = ['name', 'description'];
@@ -34,13 +40,18 @@ class AcademicYear extends Model
         return $this->hasMany(\Modules\Student\Entities\Enrollment::class);
     }
 
+    public function semestersRelation()
+    {
+        return $this->hasMany(Semester::class);
+    }
+
     public function teachers()
     {
         return $this->belongsToMany(
-            \Modules\Core\Entities\User::class,
+            \App\Models\User::class,
             'teacher_subject',
             'academic_year_id',
-            'teacher_id'
+            'user_id'
         )->distinct();
     }
 
@@ -74,7 +85,7 @@ class AcademicYear extends Model
     {
         $now = now();
         return $query->where('start_date', '<=', $now)
-                    ->where('end_date', '>=', $now);
+            ->where('end_date', '>=', $now);
     }
 
     // Accessors & Methods

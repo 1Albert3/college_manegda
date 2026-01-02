@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone')->nullable()->after('password');
-            $table->string('role_type')->default('student')->after('phone');
-            $table->boolean('is_active')->default(true)->after('role_type');
-            $table->timestamp('last_login_at')->nullable()->after('is_active');
-            $table->nullableMorphs('profile'); // Creates profile_id and profile_type columns
+            if (!Schema::hasColumn('users', 'phone')) {
+                $table->string('phone')->nullable()->after('password');
+            }
+            if (!Schema::hasColumn('users', 'role_type')) {
+                $table->string('role_type')->default('student')->after('phone');
+            }
+            if (!Schema::hasColumn('users', 'is_active')) {
+                $table->boolean('is_active')->default(true)->after('role_type');
+            }
+            if (!Schema::hasColumn('users', 'last_login_at')) {
+                $table->timestamp('last_login_at')->nullable()->after('is_active');
+            }
+            if (!Schema::hasColumn('users', 'profile_id')) {
+                $table->nullableMorphs('profile'); // Creates profile_id and profile_type columns
+            }
         });
     }
 
@@ -37,4 +47,3 @@ return new class extends Migration
         });
     }
 };
-

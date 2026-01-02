@@ -4,50 +4,66 @@ namespace Modules\Academic\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
 
 class ClassRoom extends Model
 {
-    use HasFactory, HasUuid, Searchable;
+    use HasFactory, Searchable;
 
     protected $table = 'class_rooms';
 
     protected $fillable = [
-        'name', 'level', 'stream', 'capacity',
-        'current_students_count', 'status',
-        'description', 'timetable'
+        'level_id',
+        'academic_year_id',
+        'main_teacher_id',
+        'name',
+        'room_number',
+        'capacity',
+        'description',
+        'is_active'
     ];
 
     protected $casts = [
         'capacity' => 'integer',
-        'current_students_count' => 'integer',
-        'timetable' => 'array',
+        'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
-    protected $searchable = ['name', 'level', 'stream'];
+    protected $searchable = ['name', 'room_number'];
 
     // Relations
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function mainTeacher()
+    {
+        return $this->belongsTo(\Modules\Core\Entities\User::class, 'main_teacher_id');
+    }
+
     public function enrollments()
     {
-        return $this->hasMany(\Modules\Student\Entities\Enrollment::class, 'class_id');
+        return $this->hasMany(\Modules\Student\Entities\Enrollment::class, 'class_room_id');
     }
 
     public function students()
     {
-        return $this->hasManyThrough(
+        return $this->belongsToMany(
             \Modules\Student\Entities\Student::class,
-            \Modules\Student\Entities\Enrollment::class,
-            'class_id',
-            'id',
-            'id',
+            'enrollments',
+            'class_room_id',
             'student_id'
-        )->whereHas('enrollments', function ($query) {
-            $query->where('status', 'active')
-                  ->where('academic_year_id', AcademicYear::getCurrentYear()?->id);
-        });
+        )->wherePivot('status', 'active')
+            ->withPivot(['status', 'enrollment_date'])
+            ->withTimestamps();
     }
 
     public function subjects()
@@ -55,99 +71,78 @@ class ClassRoom extends Model
         return $this->belongsToMany(
             Subject::class,
             'class_subject',
-            'class_id',
+            'class_room_id',
             'subject_id'
-        )->withPivot(['academic_year_id', 'weekly_hours', 'coefficient'])
-         ->withTimestamps();
+        )->withPivot(['hours_per_week', 'coefficient'])
+            ->withTimestamps();
     }
 
     public function currentSubjects()
     {
         $currentYearId = AcademicYear::getCurrentYear()?->id;
 
-        return $this->belongsToMany(
-            Subject::class,
-            'class_subject',
-            'class_id',
-            'subject_id'
-        )->wherePivot('academic_year_id', $currentYearId)
-         ->withPivot(['academic_year_id', 'weekly_hours', 'coefficient'])
-         ->withTimestamps();
+        return $this->subjects()
+            ->wherePivot('academic_year_id', $currentYearId);
     }
 
     public function classSubjects()
     {
-        return $this->hasMany(ClassSubject::class, 'class_id');
+        return $this->hasMany(ClassSubject::class, 'class_room_id');
     }
 
     public function attendances()
     {
-        return $this->hasManyThrough(
-            \Modules\Attendance\Entities\Attendance::class,
-            \Modules\Student\Entities\Enrollment::class,
-            'class_id',
-            'student_id',
-            'id',
-            'student_id'
-        );
+        // Assuming Attendance has class_room_id directly
+        return $this->hasMany(\Modules\Attendance\Entities\Attendance::class, 'class_room_id');
     }
 
     public function grades()
     {
+        // Grades via Evaluation
         return $this->hasManyThrough(
             \Modules\Grade\Entities\Grade::class,
-            \Modules\Student\Entities\Enrollment::class,
-            'class_id',
-            'student_id',
+            \Modules\Grade\Entities\Evaluation::class,
+            'class_room_id',
+            'evaluation_id',
             'id',
-            'student_id'
+            'id'
         );
     }
 
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('is_active', true);
     }
 
     public function scopeByLevel($query, string $level)
     {
-        return $query->where('level', $level);
+        return $query->where('level_id', $level);
     }
 
     public function scopeByStream($query, string $stream)
     {
-        return $query->where('stream', $stream);
+        return $query;
     }
 
     public function scopeOrderByLevel($query)
     {
-        return $query->orderBy('level')->orderBy('stream')->orderBy('name');
+        return $query->orderBy('level_id')->orderBy('name');
     }
 
     // Accessors & Methods
     public function getDisplayNameAttribute()
     {
-        $display = $this->name;
-
-        if ($this->level) {
-            $display .= ' (' . $this->level;
-            if ($this->stream) {
-                $display .= ' - ' . $this->stream;
-            }
-            $display .= ')';
-        }
-
-        return $display;
+        return $this->name;
     }
 
     public function getAvailableSpotsAttribute()
     {
         if ($this->capacity === null) {
-            return null; // Capacité illimitée
+            return null;
         }
-
-        return max(0, $this->capacity - $this->current_students_count);
+        // Assuming enrollments relation count or explicit column
+        return max(0, $this->capacity - $this->enrollments()->active()->count());
     }
 
     public function getOccupancyRateAttribute()
@@ -155,20 +150,19 @@ class ClassRoom extends Model
         if ($this->capacity === null || $this->capacity === 0) {
             return 0;
         }
-
-        return round(($this->current_students_count / $this->capacity) * 100, 1);
+        return round(($this->enrollments()->active()->count() / $this->capacity) * 100, 1);
     }
 
     public function getFullNameAttribute()
     {
-        return $this->name . ' - ' . $this->level . ($this->stream ? ' ' . $this->stream : '');
+        return $this->name;
     }
 
     public function enrollStudent(\Modules\Student\Entities\Student $student, array $enrollmentData = [])
     {
         $enrollmentData = array_merge([
             'academic_year_id' => AcademicYear::getCurrentYear()?->id,
-            'class_id' => $this->id,
+            'class_room_id' => $this->id,
             'enrollment_date' => now()->toDateString(),
             'status' => 'active',
             'discount_percentage' => 0,
@@ -179,13 +173,7 @@ class ClassRoom extends Model
 
     public function updateStudentsCount()
     {
-        $count = $this->enrollments()
-                     ->where('status', 'active')
-                     ->where('academic_year_id', AcademicYear::getCurrentYear()?->id)
-                     ->count();
-
-        $this->update(['current_students_count' => $count]);
-
+        // Optional: Update a cached count column if it exists
         return $this;
     }
 
@@ -212,10 +200,10 @@ class ClassRoom extends Model
     public function getAttendanceStats()
     {
         $attendances = $this->attendances()
-                           ->whereDate('date', today())
-                           ->get();
+            ->whereDate('date', today())
+            ->get();
 
-        $total = $this->current_students_count;
+        $total = $this->enrollments()->active()->count();
         $present = $attendances->where('status', 'present')->count();
         $absent = $attendances->where('status', 'absent')->count();
         $late = $attendances->where('status', 'late')->count();
@@ -233,11 +221,11 @@ class ClassRoom extends Model
     public static function getByLevelGrouped()
     {
         return static::active()
-                    ->orderBy('level')
-                    ->orderBy('name')
-                    ->get()
-                    ->groupBy(['level', 'stream'])
-                    ->toArray();
+            ->orderBy('level_id')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('level_id')
+            ->toArray();
     }
 
     public static function findByName(string $name)

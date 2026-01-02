@@ -7,12 +7,12 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use App\Traits\HasUuid;
 use App\Traits\Searchable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, HasUuid, Searchable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, Searchable, HasUuids;
 
     protected $guard_name = 'sanctum';
 
@@ -47,5 +47,10 @@ class User extends Authenticatable
     public function profile()
     {
         return $this->morphTo('profile', 'profile_type', 'profile_id');
+    }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\UserFactory::new();
     }
 }

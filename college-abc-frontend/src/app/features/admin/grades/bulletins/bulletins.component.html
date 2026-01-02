@@ -1,0 +1,144 @@
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <div class="mb-8" data-aos="fade-down">
+    <h2 class="text-3xl font-bold text-gray-800 font-serif">Bulletins & Classements</h2>
+    <p class="text-gray-500 mt-2">Générez les classements et téléchargez les bulletins semestriels.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Filters Panel -->
+    <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 h-fit" data-aos="fade-right">
+      <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-4">Configuration</h3>
+      
+      <form [formGroup]="configForm" (ngSubmit)="onGenerate()">
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Année Scolaire</label>
+          <select formControlName="academic_year_id" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+            <option value="1">2023-2024</option>
+            <!-- TODO: Dynamic years -->
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Période</label>
+          <select formControlName="period_id" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+            <option value="1">1er Trimestre</option>
+            <option value="2">2ème Trimestre</option>
+            <option value="3">3ème Trimestre</option>
+          </select>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Classe</label>
+          <select formControlName="class_id" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+            <option value="">Sélectionner...</option>
+            <option *ngFor="let cls of classes" [value]="cls.id">{{ cls.name }}</option>
+          </select>
+        </div>
+
+        <button type="submit" 
+                [disabled]="configForm.invalid || loading"
+                class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i *ngIf="loading" class="pi pi-spin pi-spinner"></i>
+            <span *ngIf="!loading">Générer le classement</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="lg:col-span-3 bg-white rounded-xl shadow-lg p-6 min-h-[500px]" data-aos="fade-left">
+      
+      <!-- Empty State -->
+      <div *ngIf="!reportData && !loading" class="h-full flex flex-col items-center justify-center text-gray-400 py-12">
+        <i class="pi pi-file-pdf text-6xl mb-4 text-gray-200"></i>
+        <p class="text-lg">Sélectionnez une classe et une période pour voir les résultats.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="h-full flex items-center justify-center py-12">
+        <div class="flex flex-col items-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <p class="text-gray-500">Calcul des moyennes en cours...</p>
+        </div>
+      </div>
+
+      <!-- Data Display -->
+      <div *ngIf="reportData && !loading">
+        <div class="flex flex-wrap justify-between items-end mb-6 gap-4">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">{{ reportData.class_name }}</h3>
+            <p class="text-gray-500">Effectif: <span class="font-bold text-gray-800">{{ reportData.total_students }} élèves</span></p>
+          </div>
+          
+          <div class="bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+            <p class="text-xs text-blue-600 uppercase font-bold tracking-wider">Moyenne de classe</p>
+            <p class="text-2xl font-bold text-blue-800">{{ reportData.class_average | number:'1.2-2' }}/20</p>
+          </div>
+          
+          <button (click)="downloadClassPdf()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <i class="pi pi-download"></i> Tout télécharger (PDF)
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg border border-gray-100">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                <th class="p-4 font-semibold text-center w-16">Rang</th>
+                <th class="p-4 font-semibold">Élève</th>
+                <th class="p-4 font-semibold text-center">Moyenne</th>
+                <th class="p-4 font-semibold text-center">Mention</th>
+                <th class="p-4 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50 text-sm">
+              <tr *ngFor="let studentReport of reportData.students" class="hover:bg-gray-50 transition-colors group">
+                <td class="p-4 text-center font-bold text-gray-700">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto"
+                       [class.bg-yellow-100]="studentReport.rank === 1"
+                       [class.text-yellow-700]="studentReport.rank === 1"
+                       [class.bg-gray-100]="studentReport.rank > 3"
+                       [class.bg-orange-100]="studentReport.rank === 2 || studentReport.rank === 3">
+                    {{ studentReport.rank }}
+                  </div>
+                </td>
+                <td class="p-4 font-medium text-gray-800">
+                  {{ studentReport.student.first_name }} {{ studentReport.student.last_name }}
+                  <span class="block text-xs text-gray-400 font-normal">{{ studentReport.student.matricule }}</span>
+                </td>
+                <td class="p-4 text-center font-bold text-lg" 
+                    [class.text-green-600]="studentReport.general_average >= 10"
+                    [class.text-red-500]="studentReport.general_average < 10">
+                  {{ studentReport.general_average | number:'1.2-2' }}
+                </td>
+                <td class="p-4 text-center">
+                  <span class="px-2 py-1 rounded text-xs font-medium"
+                        [class.bg-green-100]="studentReport.general_average >= 14"
+                        [class.text-green-700]="studentReport.general_average >= 14"
+                        [class.bg-blue-100]="studentReport.general_average >= 12 && studentReport.general_average < 14"
+                        [class.text-blue-700]="studentReport.general_average >= 12 && studentReport.general_average < 14"
+                        [class.bg-orange-100]="studentReport.general_average >= 10 && studentReport.general_average < 12"
+                        [class.text-orange-700]="studentReport.general_average >= 10 && studentReport.general_average < 12"
+                        [class.bg-red-100]="studentReport.general_average < 10"
+                        [class.text-red-700]="studentReport.general_average < 10">
+                    {{ studentReport.general_average >= 16 ? 'Excellent' : 
+                       studentReport.general_average >= 14 ? 'Très Bien' :
+                       studentReport.general_average >= 12 ? 'Bien' :
+                       studentReport.general_average >= 10 ? 'Passable' : 'Faible' }}
+                  </span>
+                </td>
+                <td class="p-4 text-right">
+                  <button (click)="downloadStudentPdf(studentReport.student_id)" 
+                          class="text-gray-400 hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/5"
+                          title="Télécharger Bulletin">
+                    <i class="pi pi-file-pdf text-xl"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

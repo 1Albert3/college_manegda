@@ -16,16 +16,18 @@ use Spatie\QueryBuilder\AllowedFilter;
  */
 class AttendanceController extends Controller
 {
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
     public function __construct(
         private AttendanceService $attendanceService
     ) {
-        $this->middleware('permission:view-attendances')->only(['index', 'show', 'byStudent', 'bySession', 'byClass']);
-        $this->middleware('permission:mark-attendances')->only(['mark', 'bulkMark']);
-        $this->middleware('permission:manage-attendances')->only(['update', 'destroy']);
+        // Middleware removed in favor of strict Policy checks in methods
     }
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $attendances = QueryBuilder::for(\Modules\Attendance\Entities\Attendance::class)
             ->allowedFilters([
                 'status',
@@ -50,6 +52,8 @@ class AttendanceController extends Controller
             return ApiResponse::error('Présence non trouvée', 404);
         }
 
+        $this->authorize('view', $attendance);
+
         return ApiResponse::success($attendance->load([
             'student',
             'session.subject',
@@ -62,6 +66,8 @@ class AttendanceController extends Controller
 
     public function mark(Request $request): JsonResponse
     {
+        $this->authorize('create', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'student_id' => 'required|integer|exists:students,id',
             'session_id' => 'required|integer|exists:sessions,id',
@@ -99,6 +105,8 @@ class AttendanceController extends Controller
 
     public function bulkMark(Request $request): JsonResponse
     {
+        $this->authorize('create', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'session_id' => 'required|integer|exists:sessions,id',
             'attendances' => 'required|array|min:1',
@@ -131,6 +139,9 @@ class AttendanceController extends Controller
 
     public function update(Request $request, string $uuid): JsonResponse
     {
+        $attendance = \Modules\Attendance\Entities\Attendance::where('uuid', $uuid)->firstOrFail();
+        $this->authorize('update', $attendance);
+
         $request->validate([
             'status' => 'sometimes|in:present,absent,late,excused,partially_present',
             'minutes_late' => 'nullable|integer|min:0|max:480',
@@ -142,7 +153,6 @@ class AttendanceController extends Controller
         ]);
 
         try {
-            $attendance = \Modules\Attendance\Entities\Attendance::where('uuid', $uuid)->firstOrFail();
             $attendance->update($request->validated());
 
             return ApiResponse::success($attendance->fresh()->load([
@@ -157,8 +167,10 @@ class AttendanceController extends Controller
 
     public function destroy(string $uuid): JsonResponse
     {
+        $attendance = \Modules\Attendance\Entities\Attendance::where('uuid', $uuid)->firstOrFail();
+        $this->authorize('delete', $attendance);
+
         try {
-            $attendance = \Modules\Attendance\Entities\Attendance::where('uuid', $uuid)->firstOrFail();
             $attendance->delete();
 
             return ApiResponse::success(null, 'Présence supprimée avec succès', 204);
@@ -169,6 +181,12 @@ class AttendanceController extends Controller
 
     public function byStudent(int $studentId, Request $request): JsonResponse
     {
+        $student = \Modules\Student\Entities\Student::findOrFail($studentId);
+        // Authorization: Check relationship or permission
+        if ($request->user()->cant('view', $student) && $request->user()->cant('view-attendances')) {
+            abort(403);
+        }
+
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
 
@@ -182,6 +200,8 @@ class AttendanceController extends Controller
 
     public function bySession(int $sessionId): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $attendances = $this->attendanceService->getSessionAttendance($sessionId);
 
         return ApiResponse::success($attendances->load([
@@ -192,6 +212,8 @@ class AttendanceController extends Controller
 
     public function byClass(int $classId, Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'date' => 'required|date',
         ]);
@@ -207,6 +229,8 @@ class AttendanceController extends Controller
 
     public function monthlyReport(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'class_id' => 'required|integer|exists:class_rooms,id',
             'month' => 'required|integer|min:1|max:12',
@@ -230,6 +254,16 @@ class AttendanceController extends Controller
 
     public function stats(Request $request): JsonResponse
     {
+        if ($request->student_id) {
+            // Check student access
+            $student = \Modules\Student\Entities\Student::findOrFail($request->student_id);
+            if ($request->user()->cant('view', $student) && $request->user()->cant('view-attendances')) {
+                abort(403);
+            }
+        } else {
+            $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+        }
+
         $request->validate([
             'student_id' => 'nullable|integer|exists:students,id',
             'class_id' => 'nullable|integer|exists:class_rooms,id',
@@ -258,6 +292,8 @@ class AttendanceController extends Controller
 
     public function trends(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'class_id' => 'required|integer|exists:class_rooms,id',
             'days' => 'nullable|integer|min:1|max:365',
@@ -273,6 +309,8 @@ class AttendanceController extends Controller
 
     public function studentsAtRisk(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'class_id' => 'required|integer|exists:class_rooms,id',
             'threshold' => 'nullable|numeric|min:0|max:100',
@@ -288,6 +326,8 @@ class AttendanceController extends Controller
 
     public function sendAbsenceNotifications(Request $request): JsonResponse
     {
+        $this->authorize('create', \Modules\Attendance\Entities\Attendance::class); // or 'send-communications'
+
         $request->validate([
             'date' => 'required|date',
         ]);
@@ -305,6 +345,8 @@ class AttendanceController extends Controller
 
     public function export(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', \Modules\Attendance\Entities\Attendance::class);
+
         $request->validate([
             'class_id' => 'required|integer|exists:class_rooms,id',
             'start_date' => 'nullable|date',

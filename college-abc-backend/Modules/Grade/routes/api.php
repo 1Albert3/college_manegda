@@ -56,22 +56,16 @@ Route::middleware(['api', 'auth:sanctum'])->prefix('v1')->name('grade.')->group(
         Route::post('/record', [GradeController::class, 'record'])->name('record');
         Route::post('/bulk-record', [GradeController::class, 'bulkRecord'])->name('bulk-record');
 
-        Route::prefix('{grade}')->group(function () {
-            Route::get('/', [GradeController::class, 'show'])->name('show');
-            Route::put('/', [GradeController::class, 'update'])->name('update');
-            Route::delete('/', [GradeController::class, 'destroy'])->name('destroy');
-        });
+        // Statistics - MUST be before {grade} routes
+        Route::get('/statistics', [GradeController::class, 'getStatistics'])->name('statistics');
+        Route::get('/school-stats', [GradeController::class, 'getSchoolStats'])->name('school-stats');
 
-        // Soft delete operations
-        Route::post('/{gradeId}/restore', [GradeController::class, 'restore'])->name('restore');
-        Route::delete('/{gradeId}/force-delete', [GradeController::class, 'forceDelete'])->name('force-delete');
-
-        // Filtered grades
+        // Filtered grades - MUST be before {grade} routes
         Route::get('/by-student/{studentId}', [GradeController::class, 'getByStudent'])->name('by-student');
         Route::get('/by-evaluation/{evaluationId}', [GradeController::class, 'getByEvaluation'])->name('by-evaluation');
         Route::get('/absent', [GradeController::class, 'getAbsent'])->name('absent');
 
-        // Reports
+        // Reports - MUST be before {grade} routes
         Route::get('/student/{studentId}/report', [GradeController::class, 'getStudentReport'])->name('student-report');
         Route::get('/class/{classId}/report', [GradeController::class, 'getClassReport'])->name('class-report');
         Route::get('/teacher/{teacherId}/report', [GradeController::class, 'getTeacherReport'])->name('teacher-report');
@@ -81,9 +75,16 @@ Route::middleware(['api', 'auth:sanctum'])->prefix('v1')->name('grade.')->group(
         Route::get('/student/{studentId}/report-card/{academicYearId}/download', [GradeController::class, 'downloadReportCardPDF'])->name('report-card-pdf');
         Route::get('/class/{classId}/report/download', [GradeController::class, 'generateClassGradesPDF'])->name('class-report-pdf');
 
-        // Statistics
-        Route::get('/statistics', [GradeController::class, 'getStatistics'])->name('statistics');
-        Route::get('/school-stats', [GradeController::class, 'getSchoolStats'])->name('school-stats');
+        // Soft delete operations
+        Route::post('/{gradeId}/restore', [GradeController::class, 'restore'])->name('restore');
+        Route::delete('/{gradeId}/force-delete', [GradeController::class, 'forceDelete'])->name('force-delete');
+
+        // Dynamic {grade} routes - MUST be last
+        Route::prefix('{grade}')->group(function () {
+            Route::get('/', [GradeController::class, 'show'])->name('show');
+            Route::put('/', [GradeController::class, 'update'])->name('update');
+            Route::delete('/', [GradeController::class, 'destroy'])->name('destroy');
+        });
     });
 });
 
